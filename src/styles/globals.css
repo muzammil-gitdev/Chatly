@@ -43,15 +43,15 @@
 
 .dark {
   --background: #0B0F19;
-  --foreground: #f8fafc;
+  --foreground: #f1f5f9;
   --primary: #10b981;
   --primary-foreground: #0B0F19;
-  --secondary: #1f2937;
-  --secondary-foreground: #f8fafc;
-  --muted: #1f2937;
+  --secondary: #161B2E;
+  --secondary-foreground: #f1f5f9;
+  --muted: #161B2E;
   --muted-foreground: #94a3b8;
-  --border: #1f2937;
-  --input: #1f2937;
+  --border: #1F2937;
+  --input: #1F2937;
   --ring: #10b981;
 }
 

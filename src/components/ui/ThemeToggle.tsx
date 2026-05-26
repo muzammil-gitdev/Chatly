@@ -1,63 +1,30 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Sun, Moon } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useTheme } from "./ThemeProvider";
 
 const ThemeToggle = () => {
-    const [theme, setTheme] = useState<"light" | "dark">("light");
-
-    useEffect(() => {
-        const savedTheme = localStorage.getItem("theme") as "light" | "dark" | null;
-        const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-        const initialTheme = savedTheme || systemTheme;
-        
-        setTheme(initialTheme);
-        if (initialTheme === "dark") {
-            document.documentElement.classList.add("dark");
-        }
-    }, []);
-
-    const toggleTheme = () => {
-        const newTheme = theme === "light" ? "dark" : "light";
-        setTheme(newTheme);
-        localStorage.setItem("theme", newTheme);
-        if (newTheme === "dark") {
-            document.documentElement.classList.add("dark");
-        } else {
-            document.documentElement.classList.remove("dark");
-        }
-    };
+    const { theme, toggleTheme } = useTheme();
 
     return (
         <button
             onClick={toggleTheme}
-            className="w-10 h-10 rounded-xl glass flex items-center justify-center hover:scale-110 transition-transform duration-300 overflow-hidden relative"
-            aria-label="Toggle Theme"
+            className="p-3 rounded-xl glass border border-border hover:border-primary/50 transition-all duration-300 group relative overflow-hidden"
+            aria-label="Toggle theme"
         >
-            <AnimatePresence mode="wait">
+            <div className="relative z-10">
                 {theme === "light" ? (
-                    <motion.div
-                        key="sun"
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: -20, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                    >
-                        <Sun className="w-5 h-5 text-amber-500" />
-                    </motion.div>
+                    <Sun className="w-5 h-5 text-amber-500 transition-transform duration-500 group-hover:rotate-90" />
                 ) : (
-                    <motion.div
-                        key="moon"
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: -20, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                    >
-                        <Moon className="w-5 h-5 text-indigo-400" />
-                    </motion.div>
+                    <Moon className="w-5 h-5 text-cyan-400 transition-transform duration-500 group-hover:-rotate-12" />
                 )}
-            </AnimatePresence>
+            </div>
+            
+            {/* Subtle glow effect */}
+            <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br ${
+                theme === "light" ? "from-amber-200/20 to-transparent" : "from-cyan-400/10 to-transparent"
+            }`} />
         </button>
     );
 };

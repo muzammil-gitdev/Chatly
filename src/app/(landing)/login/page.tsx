@@ -51,7 +51,7 @@ const LoginPage = () => {
                         </div>
 
                         <div className="text-right">
-                            <Link href="#" className="text-sm font-bold text-primary hover:underline">Forgot Password?</Link>
+                            <Link href="/forgot-password" title="Forgot Password?" className="text-sm font-bold text-primary hover:underline">Forgot Password?</Link>
                         </div>
 
                         <button className="w-full py-4 bg-primary text-primary-foreground rounded-2xl font-bold shadow-xl shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center space-x-2">

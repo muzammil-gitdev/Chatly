@@ -3,27 +3,49 @@
 import React from "react";
 import { MessageSquare, Users, Settings } from "lucide-react";
 
-const Sidebar = () => {
+interface SidebarProps {
+    activeView: "messages" | "groups" | "settings";
+    onViewChange: (view: "messages" | "groups" | "settings") => void;
+}
+
+const Sidebar = ({ activeView, onViewChange }: SidebarProps) => {
     return (
-        <div className="w-20 border-r border-border flex flex-col items-center py-8 space-y-8 bg-secondary/20 h-full">
+        <div className="w-20 flex-shrink-0 border-r border-border flex flex-col items-center py-8 space-y-8 bg-secondary/20 h-full">
             <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
                 <span className="text-white font-bold text-xl">C</span>
             </div>
             
             <div className="flex flex-col space-y-6">
-                <button className="p-3 bg-primary/10 rounded-xl hover:text-primary transition-colors text-primary" aria-label="Messages">
+                <button 
+                    onClick={() => onViewChange("messages")}
+                    className={`p-3 rounded-xl transition-all duration-300 ${
+                        activeView === "messages" ? "bg-primary/20 text-primary shadow-sm" : "text-muted-foreground hover:text-primary hover:bg-secondary"
+                    }`} 
+                    aria-label="Messages"
+                >
                     <MessageSquare />
                 </button>
-                <button className="p-3 text-muted-foreground hover:text-primary transition-colors" aria-label="Groups">
+                <button 
+                    onClick={() => onViewChange("groups")}
+                    className={`p-3 rounded-xl transition-all duration-300 ${
+                        activeView === "groups" ? "bg-primary/20 text-primary shadow-sm" : "text-muted-foreground hover:text-primary hover:bg-secondary"
+                    }`} 
+                    aria-label="Groups"
+                >
                     <Users />
-                </button>
-                <button className="p-3 text-muted-foreground hover:text-primary transition-colors" aria-label="Settings">
-                    <Settings />
                 </button>
             </div>
 
             <div className="mt-auto">
-                <div className="w-10 h-10 rounded-full bg-secondary border-2 border-primary cursor-pointer hover:scale-105 transition-transform" />
+                <button 
+                    onClick={() => onViewChange("settings")}
+                    className={`p-3 rounded-xl transition-all duration-300 ${
+                        activeView === "settings" ? "bg-primary/20 text-primary shadow-sm" : "text-muted-foreground hover:text-primary hover:bg-secondary"
+                    }`} 
+                    aria-label="Settings"
+                >
+                    <Settings />
+                </button>
             </div>
         </div>
     );

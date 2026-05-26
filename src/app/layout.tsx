@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Outfit } from "next/font/google";
-import "../styles/globals.css";
+import { ThemeProvider } from "@/components/ui/ThemeProvider";
+import "@/styles/globals.css";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -13,8 +14,8 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Chatly | Serverless Real-Time Messaging",
-  description: "High-performance, serverless real-time messaging platform with zero-trust security.",
+  title: "Chatly | Messaging for the Zero-Trust Era",
+  description: "Secure, real-time messaging with dual-layer encryption.",
 };
 
 export default function RootLayout({
@@ -23,9 +24,28 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${outfit.variable}`}>
-      <body className="antialiased overflow-x-hidden">
-        {children}
+    <html lang="en" className="scroll-smooth" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var theme = localStorage.getItem('theme');
+                  var supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+                  if (theme === 'dark' || (!theme && supportDarkMode)) {
+                    document.documentElement.classList.add('dark');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
+      <body className={`${inter.variable} ${outfit.variable} font-inter bg-background text-foreground transition-colors duration-300`}>
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );
