@@ -1,163 +1,333 @@
 "use client";
 
-import React, { useState } from "react";
-import { 
-    User, 
-    Briefcase, 
-    GraduationCap, 
-    FileText, 
-    Camera,
-    MapPin,
-    Phone,
-    Mail,
-    Calendar,
-    Building
-} from "lucide-react";
+import React, { useState, useRef } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  User,
+  Lock,
+  Palette,
+  Bell,
+  Camera,
+  MapPin,
+  Phone,
+  EnvelopeSimple,
+  FloppyDisk,
+} from "@phosphor-icons/react";
+import { useAuth } from "@/context/AuthContext";
+import { updateUser } from "@/lib/firestore";
+import { useTheme } from "@/components/ui/ThemeProvider";
 
+const spring = { type: "spring", stiffness: 300, damping: 25 } as const;
+
+type Tab = "profile" | "account" | "appearance" | "notifications";
+
+const TABS: { id: Tab; label: string; Icon: React.ElementType }[] = [
+  { id: "profile", label: "Profile", Icon: User },
+  { id: "account", label: "Account", Icon: Lock },
+  { id: "appearance", label: "Appearance", Icon: Palette },
+  { id: "notifications", label: "Notifications", Icon: Bell },
+];
+
+// ─── Fieldset input ───────────────────────────────────────────────────────────
+function Field({
+  label,
+  icon: Icon,
+  type = "text",
+  value,
+  onChange,
+  disabled,
+  hint,
+}: {
+  label: string;
+  icon?: React.ElementType;
+  type?: string;
+  value: string;
+  onChange?: (v: string) => void;
+  disabled?: boolean;
+  hint?: string;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">{label}</label>
+      <div className="relative">
+        {Icon && <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={16} />}
+        <input
+          type={type}
+          value={value}
+          onChange={(e) => onChange?.(e.target.value)}
+          disabled={disabled}
+          className="w-full pl-10 pr-4 py-3 bg-[#161922] border border-zinc-800/60 focus:border-emerald-500/30 rounded-xl text-sm text-zinc-200 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-zinc-700"
+        />
+      </div>
+      {hint && <p className="text-[11px] text-zinc-600 ml-1">{hint}</p>}
+    </div>
+  );
+}
+
+// ─── Appearance options ───────────────────────────────────────────────────────
+const THEME_OPTIONS: { id: string; label: string; preview: string }[] = [
+  { id: "dark", label: "Dark", preview: "bg-zinc-900 border-zinc-700" },
+  { id: "light", label: "Light", preview: "bg-zinc-100 border-zinc-300" },
+  { id: "system", label: "System", preview: "bg-gradient-to-r from-zinc-900 to-zinc-100 border-zinc-500" },
+];
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 const SettingsPanel = () => {
-    const [activeTab, setActiveTab] = useState<"personal" | "professional" | "education" | "documents">("personal");
+  const { user, profile } = useAuth();
+  const { theme, setTheme } = useTheme();
+  const [activeTab, setActiveTab] = useState<Tab>("profile");
+  const [form, setForm] = useState({
+    displayName: profile?.displayName ?? "",
+    phone: profile?.phone ?? "",
+    location: profile?.location ?? "",
+    bio: profile?.bio ?? "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const tabs = [
-        { id: "personal", label: "Personal Info", icon: User },
-        { id: "professional", label: "Professional", icon: Briefcase },
-        { id: "education", label: "Education", icon: GraduationCap },
-        { id: "documents", label: "Documents", icon: FileText },
-    ] as const;
+  const set = (key: keyof typeof form) => (val: string) =>
+    setForm((p) => ({ ...p, [key]: val }));
 
-    return (
-        <div className="flex-1 overflow-y-auto bg-background p-8 lg:p-12 animate-fade-in">
-            <div className="max-w-4xl mx-auto space-y-8">
-                <div>
-                    <h1 className="text-3xl font-black mb-2">My Profile</h1>
-                    <p className="text-muted-foreground">Manage your personal and professional information</p>
-                </div>
+  const handleSave = async () => {
+    if (!user) return;
+    setSaving(true);
+    try {
+      await updateUser(user.uid, {
+        displayName: form.displayName.trim(),
+        phone: form.phone.trim(),
+        location: form.location.trim(),
+        bio: form.bio.trim(),
+      });
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2500);
+    } finally {
+      setSaving(false);
+    }
+  };
 
-                {/* Profile Header Card */}
-                <div className="glass p-8 rounded-3xl border-border shadow-2xl flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-8">
-                    <div className="relative group">
-                        <div className="w-32 h-32 rounded-3xl bg-secondary overflow-hidden border-4 border-background shadow-lg">
-                            <div className="w-full h-full bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center">
-                                <User className="w-12 h-12 text-primary/50" />
-                            </div>
-                        </div>
-                        <button className="absolute -bottom-2 -right-2 p-2 bg-primary text-primary-foreground rounded-xl shadow-lg hover:scale-110 transition-transform">
-                            <Camera className="w-4 h-4" />
-                        </button>
-                    </div>
-                    
-                    <div className="flex-1 text-center md:text-left">
-                        <h2 className="text-2xl font-black mb-1">Dr. Adeel Mushtaq</h2>
-                        <p className="text-primary font-bold text-sm mb-1">Security Architect / Lead Developer</p>
-                        <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">UID: CH-98231-X</p>
-                        <button className="mt-4 text-sm font-bold text-primary hover:underline">Change photo</button>
-                    </div>
-                </div>
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    setUploadLoading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("uid", user.uid);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      if (!res.ok) throw new Error("Upload failed");
+      const { url } = await res.json();
+      await updateUser(user.uid, { photoURL: url });
+    } finally {
+      setUploadLoading(false);
+    }
+  };
 
-                {/* Navigation Tabs */}
-                <div className="flex flex-wrap gap-2 p-1 bg-secondary/30 rounded-2xl">
-                    {tabs.map((tab) => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            className={`flex items-center space-x-2 px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${
-                                activeTab === tab.id 
-                                ? "bg-background text-primary shadow-md" 
-                                : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                            }`}
-                        >
-                            <tab.icon className="w-4 h-4" />
-                            <span>{tab.label}</span>
-                        </button>
-                    ))}
-                </div>
-
-                {/* Form Content */}
-                <div className="glass p-8 lg:p-10 rounded-3xl border-border shadow-xl">
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={activeTab}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            transition={{ duration: 0.2 }}
-                        >
-                            {activeTab === "personal" && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">First Name</label>
-                                        <input type="text" defaultValue="Adeel" className="w-full px-6 py-4 bg-secondary/50 border border-transparent focus:border-primary/30 rounded-2xl outline-none transition-all font-medium" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Last Name</label>
-                                        <input type="text" defaultValue="Mushtaq" className="w-full px-6 py-4 bg-secondary/50 border border-transparent focus:border-primary/30 rounded-2xl outline-none transition-all font-medium" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Email</label>
-                                        <div className="relative">
-                                            <Mail className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                                            <input type="email" defaultValue="adeel@chatly.com" className="w-full pl-14 pr-6 py-4 bg-secondary/50 border border-transparent focus:border-primary/30 rounded-2xl outline-none transition-all font-medium opacity-70 cursor-not-allowed" disabled />
-                                        </div>
-                                        <p className="text-[10px] text-muted-foreground ml-1">Contact support to change email</p>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Phone</label>
-                                        <div className="relative">
-                                            <Phone className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                                            <input type="text" defaultValue="+92 300 1234567" className="w-full pl-14 pr-6 py-4 bg-secondary/50 border border-transparent focus:border-primary/30 rounded-2xl outline-none transition-all font-medium" />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Gender</label>
-                                        <select className="w-full px-6 py-4 bg-secondary/50 border border-transparent focus:border-primary/30 rounded-2xl outline-none transition-all font-medium appearance-none">
-                                            <option>Male</option>
-                                            <option>Female</option>
-                                            <option>Other</option>
-                                        </select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Date of Birth</label>
-                                        <div className="relative">
-                                            <Calendar className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                                            <input type="date" className="w-full pl-14 pr-6 py-4 bg-secondary/50 border border-transparent focus:border-primary/30 rounded-2xl outline-none transition-all font-medium" />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">City</label>
-                                        <div className="relative">
-                                            <MapPin className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                                            <input type="text" defaultValue="London" className="w-full pl-14 pr-6 py-4 bg-secondary/50 border border-transparent focus:border-primary/30 rounded-2xl outline-none transition-all font-medium" />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Company / Workspace</label>
-                                        <div className="relative">
-                                            <Building className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                                            <input type="text" defaultValue="Chatly HQ" className="w-full pl-14 pr-6 py-4 bg-secondary/50 border border-transparent focus:border-primary/30 rounded-2xl outline-none transition-all font-medium" />
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeTab !== "personal" && (
-                                <div className="py-12 flex flex-col items-center justify-center text-center space-y-4 opacity-50">
-                                    <Building className="w-12 h-12" />
-                                    <p className="font-bold">Section coming soon</p>
-                                    <p className="text-sm max-w-xs">We are currently integrating these professional details into your global encrypted profile.</p>
-                                </div>
-                            )}
-
-                            <div className="mt-12 flex justify-end">
-                                <button className="px-10 py-4 bg-primary text-primary-foreground rounded-2xl font-bold shadow-xl shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:-translate-y-1 transition-all duration-300">
-                                    Save Changes
-                                </button>
-                            </div>
-                        </motion.div>
-                    </AnimatePresence>
-                </div>
-            </div>
+  return (
+    <div className="flex-1 overflow-y-auto bg-[#0e1015]">
+      <div className="max-w-2xl mx-auto px-6 py-10 space-y-8">
+        {/* Header */}
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight text-zinc-100">Settings</h1>
+          <p className="text-sm text-zinc-500 mt-1">Manage your profile and preferences.</p>
         </div>
-    );
+
+        {/* Tabs */}
+        <div className="flex gap-1 p-1 bg-zinc-900/60 rounded-xl border border-zinc-800/40">
+          {TABS.map(({ id, label, Icon }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className="relative flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-medium transition-colors"
+            >
+              {activeTab === id && (
+                <motion.div
+                  layoutId="settings-tab-pill"
+                  className="absolute inset-0 bg-zinc-800 border border-zinc-700/30 rounded-lg"
+                  transition={spring}
+                />
+              )}
+              <span className={`relative z-10 flex items-center gap-1.5 ${activeTab === id ? "text-zinc-100" : "text-zinc-500 hover:text-zinc-300"}`}>
+                <Icon size={14} weight={activeTab === id ? "fill" : "regular"} />
+                <span className="hidden sm:inline">{label}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* Tab Content */}
+        <div className="bg-[#12141c] border border-zinc-800/40 rounded-2xl p-6">
+          <AnimatePresence mode="wait">
+            {/* ─── Profile Tab ── */}
+            {activeTab === "profile" && (
+              <motion.div
+                key="profile"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={spring}
+                className="space-y-6"
+              >
+                {/* Avatar */}
+                <div className="flex items-center gap-5">
+                  <div className="relative flex-shrink-0">
+                    <div className="w-20 h-20 rounded-2xl overflow-hidden bg-zinc-800 border border-zinc-700/40">
+                      {profile?.photoURL ? (
+                        <Image src={profile.photoURL} alt={profile.displayName} width={80} height={80} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-emerald-500/10 text-emerald-400 text-2xl font-semibold">
+                          {profile?.displayName?.[0]?.toUpperCase() ?? "?"}
+                        </div>
+                      )}
+                    </div>
+                    <motion.button
+                      onClick={() => fileInputRef.current?.click()}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.92 }}
+                      disabled={uploadLoading}
+                      transition={spring}
+                      className="absolute -bottom-1.5 -right-1.5 p-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-white shadow-lg disabled:opacity-60 transition-colors"
+                    >
+                      <Camera size={14} weight="fill" />
+                    </motion.button>
+                    <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-zinc-200">{profile?.displayName}</p>
+                    <p className="text-xs text-zinc-500 mt-0.5">{profile?.email}</p>
+                    {uploadLoading && <p className="text-xs text-emerald-400 mt-1">Uploading...</p>}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Field label="Display Name" icon={User} value={form.displayName} onChange={set("displayName")} />
+                  <Field label="Phone" icon={Phone} value={form.phone} onChange={set("phone")} />
+                  <Field label="Location" icon={MapPin} value={form.location} onChange={set("location")} />
+                  <Field label="Bio" value={form.bio} onChange={set("bio")} />
+                </div>
+
+                <div className="flex items-center justify-between pt-2">
+                  {saveSuccess && <p className="text-xs text-emerald-400">Changes saved!</p>}
+                  <div className="ml-auto">
+                    <motion.button
+                      onClick={handleSave}
+                      disabled={saving}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.97 }}
+                      transition={spring}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-semibold shadow-lg shadow-emerald-500/10 disabled:opacity-60 transition-colors"
+                    >
+                      <FloppyDisk size={16} weight="fill" />
+                      {saving ? "Saving..." : "Save Changes"}
+                    </motion.button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ─── Account Tab ── */}
+            {activeTab === "account" && (
+              <motion.div
+                key="account"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={spring}
+                className="space-y-4"
+              >
+                <Field
+                  label="Email Address"
+                  icon={EnvelopeSimple}
+                  type="email"
+                  value={profile?.email ?? ""}
+                  disabled
+                  hint="Email address cannot be changed. Contact support if needed."
+                />
+                <div className="pt-4 border-t border-zinc-800/40">
+                  <p className="text-sm font-medium text-zinc-200 mb-3">Change Password</p>
+                  <p className="text-xs text-zinc-500">
+                    Use the <span className="text-zinc-300">Forgot password?</span> flow on the login page to reset your password via email verification.
+                  </p>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ─── Appearance Tab ── */}
+            {activeTab === "appearance" && (
+              <motion.div
+                key="appearance"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={spring}
+                className="space-y-5"
+              >
+                <div>
+                  <p className="text-sm font-medium text-zinc-200 mb-4">Theme</p>
+                  <div className="grid grid-cols-3 gap-3">
+                    {THEME_OPTIONS.map((opt) => (
+                      <motion.button
+                        key={opt.id}
+                        onClick={() => setTheme(opt.id as "light" | "dark")}
+                        whileHover={{ scale: 1.04 }}
+                        whileTap={{ scale: 0.96 }}
+                        transition={spring}
+                        className={`relative flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-colors ${
+                          theme === opt.id
+                            ? "border-emerald-500/60 bg-emerald-500/5"
+                            : "border-zinc-800/60 bg-zinc-900/40 hover:border-zinc-700/60"
+                        }`}
+                      >
+                        <div className={`w-full h-10 rounded-lg border ${opt.preview}`} />
+                        <span className="text-xs font-medium text-zinc-300">{opt.label}</span>
+                        {theme === opt.id && (
+                          <motion.div
+                            layoutId="theme-check"
+                            className="absolute top-2 right-2 w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center"
+                            transition={spring}
+                          />
+                        )}
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ─── Notifications Tab ── */}
+            {activeTab === "notifications" && (
+              <motion.div
+                key="notifications"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={spring}
+                className="space-y-4"
+              >
+                {[
+                  { label: "New Messages", desc: "Get notified when you receive a new message" },
+                  { label: "Connection Requests", desc: "Get notified when someone wants to connect" },
+                  { label: "Group Invitations", desc: "Get notified when you're added to a group" },
+                ].map((item) => (
+                  <div key={item.label} className="flex items-center justify-between py-3 border-b border-zinc-800/30 last:border-0">
+                    <div>
+                      <p className="text-sm font-medium text-zinc-200">{item.label}</p>
+                      <p className="text-xs text-zinc-600 mt-0.5">{item.desc}</p>
+                    </div>
+                    <button className="w-10 h-5 rounded-full bg-emerald-500/20 border border-emerald-500/40 relative flex-shrink-0">
+                      <span className="absolute right-0.5 top-0.5 w-4 h-4 rounded-full bg-emerald-500 shadow-sm" />
+                    </button>
+                  </div>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default SettingsPanel;

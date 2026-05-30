@@ -1,137 +1,111 @@
 "use client";
 
 import React, { useState } from "react";
-import { 
-    MoreVertical, 
-    Send,
-    Smile,
-    Paperclip,
-    Shield
-} from "lucide-react";
-import { AnimatePresence } from "framer-motion";
-
-// Modular Components
+import { useAuth } from "@/context/AuthContext";
 import Sidebar from "@/components/chat/Sidebar";
-import ChatList from "@/components/chat/ChatList";
+import ChatList, { type SelectedConversation } from "@/components/chat/ChatList";
+import ChatWindow from "@/components/chat/ChatWindow";
 import SettingsPanel from "@/components/chat/SettingsPanel";
-import MessageItem from "@/components/chat/MessageItem";
-import InboundRequest from "@/components/chat/InboundRequest";
-import SystemLog from "@/components/chat/SystemLog";
+import NewChatModal from "@/components/chat/NewChatModal";
+import NewGroupModal from "@/components/chat/NewGroupModal";
+import { motion } from "framer-motion";
 
-// Mock Data
-const contacts = [
-    { id: 1, name: "Alex Rivera", lastMsg: "The server is ready.", time: "10:30 AM", unread: 2, online: true },
-    { id: 2, name: "Project Aurora", lastMsg: "System Log: Member 'Sarah' joined.", time: "Yesterday", unread: 0, online: false, isGroup: true },
-    { id: 3, name: "Sarah Chen", lastMsg: "Did you update the handshake protocol?", time: "2 days ago", unread: 0, online: true },
-];
+type View = "messages" | "groups" | "settings";
 
-const initialMessages = [
-    { id: 1, text: "Hey! How's the progress on the serverless backend?", sent: true, status: "read", time: "10:25 AM" },
-    { id: 2, text: "Coming along great. High-performance reactive state management is solid.", sent: false, time: "10:26 AM" },
-    { id: 3, text: "The dual-layer permission system is live too.", sent: false, time: "10:26 AM" },
-    { id: 4, text: "The server is ready.", sent: false, time: "10:30 AM" },
-];
-
-const ChatPage = () => {
-    const [activeView, setActiveView] = useState<"messages" | "groups" | "settings">("messages");
-    const [selectedChat, setSelectedChat] = useState(contacts[0]);
-    const [showHandshake, setShowHandshake] = useState(true);
-
-    return (
-        <div className="flex h-screen bg-background overflow-hidden font-inter">
-            {/* Sidebar Navigation */}
-            <Sidebar activeView={activeView} onViewChange={setActiveView} />
-
-            {/* Contacts List / Groups List */}
-            {activeView !== "settings" && (
-                <ChatList 
-                    contacts={contacts} 
-                    selectedChatId={selectedChat.id} 
-                    onSelectChat={setSelectedChat}
-                    view={activeView}
-                />
-            )}
-
-            {/* Main Content Area */}
-            <div className="flex-1 flex flex-col relative bg-background">
-                {activeView === "settings" ? (
-                    <SettingsPanel />
-                ) : (
-                    <>
-                        {/* Header */}
-                        <header className="min-h-[80px] border-b border-border flex items-center justify-between px-8 glass relative z-10 transition-all">
-                            <div className="flex items-center space-x-4">
-                                <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center font-bold font-outfit text-foreground">
-                                    {selectedChat.name[0]}
-                                </div>
-                                <div>
-                                    <h2 className="font-bold text-sm tracking-tight">{selectedChat.name}</h2>
-                                    <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">
-                                        {selectedChat.online ? "Online" : "Offline"}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="flex items-center space-x-4">
-                                <button className="p-2 hover:bg-secondary rounded-lg transition-colors" title="Security Info">
-                                    <Shield className="w-5 h-5 text-muted-foreground" />
-                                </button>
-                                <button className="p-2 hover:bg-secondary rounded-lg transition-colors" title="More Options">
-                                    <MoreVertical className="w-5 h-5 text-muted-foreground" />
-                                </button>
-                            </div>
-                        </header>
-
-                        {/* Messages Area */}
-                        <div className="flex-1 overflow-y-auto p-8 space-y-6">
-                            <AnimatePresence>
-                                {showHandshake && (
-                                    <InboundRequest 
-                                        onAccept={() => setShowHandshake(false)} 
-                                        onDecline={() => console.log("Declined")} 
-                                    />
-                                )}
-                            </AnimatePresence>
-
-                            {initialMessages.map((msg) => (
-                                <MessageItem 
-                                    key={msg.id}
-                                    text={msg.text}
-                                    sent={msg.sent}
-                                    time={msg.time}
-                                    status={msg.status}
-                                />
-                            ))}
-
-                            <SystemLog text="User joined Project Aurora" />
-                            <SystemLog text="Encryption handshake initiated" />
-                        </div>
-
-                        {/* Input Area */}
-                        <div className="p-6 pt-0">
-                            <div className={`glass rounded-2xl p-2 flex items-center space-x-2 border-border transition-all ${
-                                showHandshake ? "opacity-50 pointer-events-none grayscale" : "shadow-lg shadow-black/5"
-                            }`}>
-                                <button className="p-3 text-muted-foreground hover:text-primary transition-colors" title="Emoji">
-                                    <Smile className="w-5 h-5" />
-                                </button>
-                                <button className="p-3 text-muted-foreground hover:text-primary transition-colors" title="Attach">
-                                    <Paperclip className="w-5 h-5" />
-                                </button>
-                                <input 
-                                    type="text" 
-                                    placeholder={showHandshake ? "Connection required..." : "Type your message..."}
-                                    className="flex-1 bg-transparent border-none outline-none text-sm px-2 font-medium"
-                                />
-                                <button className="w-10 h-10 bg-primary text-primary-foreground rounded-xl flex items-center justify-center hover:shadow-lg hover:shadow-emerald-500/20 transition-all">
-                                    <Send className="w-5 h-5" />
-                                </button>
-                            </div>
-                        </div>
-                    </>
-                )}
-            </div>
+// ─── Loading skeleton ─────────────────────────────────────────────────────────
+function LoadingScreen() {
+  return (
+    <div className="flex h-[100dvh] bg-[#0b0c10] items-center justify-center">
+      <motion.div
+        animate={{ opacity: [0.4, 1, 0.4] }}
+        transition={{ repeat: Infinity, duration: 1.6, ease: "easeInOut" }}
+        className="flex items-center gap-2"
+      >
+        <div className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-lg flex items-center justify-center">
+          <span className="text-white font-semibold text-sm font-outfit">C</span>
         </div>
-    );
+        <span className="text-zinc-500 text-sm font-medium tracking-tight">Chatly</span>
+      </motion.div>
+    </div>
+  );
+}
+
+// ─── Empty state ──────────────────────────────────────────────────────────────
+function EmptyState({ view }: { view: View }) {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center bg-[#11131a] text-center px-8">
+      <div className="w-16 h-16 rounded-2xl bg-zinc-900/60 border border-zinc-800/40 flex items-center justify-center mb-4">
+        <span className="text-2xl">💬</span>
+      </div>
+      <h2 className="text-sm font-semibold tracking-tight text-zinc-300 mb-1">
+        {view === "groups" ? "Select a group" : "Select a conversation"}
+      </h2>
+      <p className="text-xs text-zinc-600 max-w-xs">
+        {view === "groups"
+          ? "Choose a group from the list or create a new one."
+          : "Choose a conversation from the list or start a new one."}
+      </p>
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+const ChatPage = () => {
+  const { loading } = useAuth();
+  const [activeView, setActiveView] = useState<View>("messages");
+  const [selected, setSelected] = useState<SelectedConversation | null>(null);
+  const [showNewChat, setShowNewChat] = useState(false);
+  const [showNewGroup, setShowNewGroup] = useState(false);
+
+  // ─── Listen for global chat closure signals ──────────────────────────────
+  React.useEffect(() => {
+    const handleClose = () => setSelected(null);
+    window.addEventListener("close-chat", handleClose);
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelected(null);
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => {
+      window.removeEventListener("close-chat", handleClose);
+      window.removeEventListener("keydown", handleEsc);
+    };
+  }, []);
+
+  if (loading) return <LoadingScreen />;
+
+  return (
+    <div className="flex h-[100dvh] bg-[#0b0c10] overflow-hidden text-zinc-100 antialiased font-sans">
+      {/* Sidebar */}
+      <Sidebar activeView={activeView} onViewChange={setActiveView} />
+
+      {/* Settings panel takes full width */}
+      {activeView === "settings" ? (
+        <SettingsPanel />
+      ) : (
+        <>
+          {/* Chat / Group List */}
+          <ChatList
+            selected={selected}
+            onSelect={setSelected}
+            view={activeView}
+            onNewChat={() => setShowNewChat(true)}
+            onNewGroup={() => setShowNewGroup(true)}
+          />
+
+          {/* Main chat area */}
+          {selected ? (
+            <ChatWindow key={selected.type === "dm" ? selected.chatId : selected.groupId} conversation={selected} />
+          ) : (
+            <EmptyState view={activeView} />
+          )}
+        </>
+      )}
+
+      {/* Modals */}
+      {showNewChat && <NewChatModal onClose={() => setShowNewChat(false)} />}
+      {showNewGroup && <NewGroupModal onClose={() => setShowNewGroup(false)} />}
+    </div>
+  );
 };
 
 export default ChatPage;

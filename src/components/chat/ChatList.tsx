@@ -1,123 +1,384 @@
 "use client";
 
-import React, { useState } from "react";
-import { Search, Plus } from "lucide-react";
+import React, { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
+import { MagnifyingGlass, Plus, UsersThree } from "@phosphor-icons/react";
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  orderBy,
+  doc,
+  getDoc,
+  type Unsubscribe,
+} from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { COLLECTIONS, type ChatDoc, type GroupDoc, type FirestoreUser } from "@/lib/firestore";
+import { useAuth } from "@/context/AuthContext";
+import { ChatItemSkeleton } from "@/components/ui/Skeleton";
+import { formatDistanceToNow } from "date-fns";
+import clsx from "clsx";
 
-interface Contact {
-    id: number;
-    name: string;
-    lastMsg: string;
-    time: string;
-    unread: number;
-    online: boolean;
-    isGroup?: boolean;
-}
+const spring = { type: "spring", stiffness: 300, damping: 25 } as const;
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+export type SelectedConversation =
+  | {
+      type: "dm";
+      chatId: string;
+      other: FirestoreUser;
+      participants: string[];
+      status: "pending" | "active";
+      requestedBy: string;
+      unreadCount?: Record<string, number>;
+      lastRead?: Record<string, any>;
+    }
+  | {
+      type: "group";
+      groupId: string;
+      name: string;
+      photoURL: string | null;
+      adminId: string;
+      members: Array<{ uid: string; status: "pending" | "accepted" }>;
+      requestedBy?: string;
+      unreadCount?: Record<string, number>;
+      lastRead?: Record<string, any>;
+    };
 
 interface ChatListProps {
-    contacts: Contact[];
-    selectedChatId: number;
-    onSelectChat: (contact: any) => void;
-    view: "messages" | "groups";
+  selected: SelectedConversation | null;
+  onSelect: (conv: SelectedConversation) => void;
+  view: "messages" | "groups";
+  onNewChat: () => void;
+  onNewGroup: () => void;
 }
 
-const ChatList = ({ contacts, selectedChatId, onSelectChat, view }: ChatListProps) => {
-    const [subTab, setSubTab] = useState<"all" | "unread" | "archived">("all");
+type SubTab = "all" | "pending";
 
-    // Filter contacts based on view (messages vs groups)
-    const filteredContacts = contacts.filter(c => 
-        view === "groups" ? c.isGroup : !c.isGroup
-    );
+// ─── Sub-tab pill ─────────────────────────────────────────────────────────────
+function SubTabs({ active, onChange }: { active: SubTab; onChange: (t: SubTab) => void }) {
+  return (
+    <div className="flex gap-1 p-1 bg-zinc-900/60 rounded-xl mb-3">
+      {(["all", "pending"] as SubTab[]).map((tab) => (
+        <button
+          key={tab}
+          onClick={() => onChange(tab)}
+          className="relative flex-1 py-1.5 text-xs font-medium rounded-lg capitalize text-zinc-400 hover:text-zinc-200 transition-colors"
+        >
+          {active === tab && (
+            <motion.div
+              layoutId="chatlist-subtab-pill"
+              className="absolute inset-0 bg-zinc-800 rounded-lg"
+              transition={spring}
+            />
+          )}
+          <span className="relative z-10">{tab}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
 
-    return (
-        <div className="w-full md:w-96 flex-shrink-0 border-r border-border flex flex-col bg-background/50 h-full transition-all">
-            <div className="p-6 pb-2">
-                <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-2xl font-black">
-                        {view === "messages" ? "Messages" : "Groups"}
-                    </h1>
-                    <button className="p-2 bg-primary/10 text-primary rounded-xl hover:bg-primary hover:text-primary-foreground transition-all duration-300">
-                        <Plus className="w-5 h-5" />
-                    </button>
-                </div>
-                
-                <div className="relative group mb-6">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                    <input 
-                        type="text" 
-                        placeholder={view === "messages" ? "Search chats..." : "Search groups..."}
-                        className="w-full pl-10 pr-4 py-3 bg-secondary/50 rounded-2xl border border-transparent focus:border-primary/30 outline-none transition-all"
-                    />
-                </div>
+// ─── Real-time User Presence Hook ──────────────────────────────────────────
+function usePresence(uid?: string) {
+  const [profile, setProfile] = useState<FirestoreUser | null>(null);
 
-                {/* Sub Tabs */}
-                <div className="flex space-x-1 p-1 bg-secondary/30 rounded-xl mb-4">
-                    <button 
-                        onClick={() => setSubTab("all")}
-                        className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-                            subTab === "all" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"
-                        }`}
-                    >
-                        All
-                    </button>
-                    <button 
-                        onClick={() => setSubTab("unread")}
-                        className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-                            subTab === "unread" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"
-                        }`}
-                    >
-                        Unread
-                    </button>
-                    <button 
-                        onClick={() => setSubTab("archived")}
-                        className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-                            subTab === "archived" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"
-                        }`}
-                    >
-                        Archived
-                    </button>
-                </div>
-            </div>
+  useEffect(() => {
+    if (!uid) return;
+    const unsub = onSnapshot(doc(db, COLLECTIONS.USERS, uid), (snap) => {
+      if (snap.exists()) setProfile(snap.data() as FirestoreUser);
+    });
+    return unsub;
+  }, [uid]);
 
-            <div className="flex-1 overflow-y-auto px-4 space-y-2">
-                {filteredContacts.length > 0 ? (
-                    filteredContacts.map((contact) => (
-                        <button 
-                            key={contact.id}
-                            onClick={() => onSelectChat(contact)}
-                            className={`w-full p-4 rounded-2xl flex items-center space-x-4 transition-all duration-200 ${
-                                selectedChatId === contact.id ? "bg-primary/10 shadow-sm" : "hover:bg-secondary/50"
-                            }`}
-                        >
-                            <div className="relative">
-                                <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center font-bold text-foreground">
-                                    {contact.name[0]}
-                                </div>
-                                {contact.online && (
-                                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-background" />
-                                )}
-                            </div>
-                            <div className="flex-1 text-left">
-                                <div className="flex justify-between items-center mb-1">
-                                    <h3 className="font-bold text-sm truncate">{contact.name}</h3>
-                                    <span className="text-[10px] text-muted-foreground">{contact.time}</span>
-                                </div>
-                                <p className="text-xs text-muted-foreground truncate">{contact.lastMsg}</p>
-                            </div>
-                            {contact.unread > 0 && (
-                                <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center text-[10px] font-bold text-primary-foreground">
-                                    {contact.unread}
-                                </div>
-                            )}
-                        </button>
-                    ))
-                ) : (
-                    <div className="flex flex-col items-center justify-center h-40 opacity-50">
-                        <p className="text-sm font-medium">No results found</p>
-                    </div>
-                )}
-            </div>
+  return profile;
+}
+
+// ─── Avatar utility ───────────────────────────────────────────────────────────
+function Avatar({ 
+  name, 
+  photoURL, 
+  online, 
+  size = 10 
+}: { 
+  name: string; 
+  photoURL?: string | null; 
+  online?: boolean; 
+  size?: number 
+}) {
+  return (
+    <div className={`relative w-${size} h-${size} flex-shrink-0`}>
+      <div className={`w-${size} h-${size} rounded-full overflow-hidden bg-zinc-800 border border-zinc-700/30 shadow-inner`}>
+        {photoURL ? (
+          <Image src={photoURL} alt={name} width={40} height={40} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-emerald-500/10 text-emerald-400 text-sm font-semibold">
+            {name[0]?.toUpperCase()}
+          </div>
+        )}
+      </div>
+      {online != null && (
+        <span className={clsx(
+          "absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[#12141c] transition-colors duration-500", 
+          online ? "bg-[#3dfc82] shadow-[0_0_8px_rgba(61,252,130,0.6)]" : "bg-zinc-600"
+        )} />
+      )}
+    </div>
+  );
+}
+
+function ChatListItem({ 
+  conv, 
+  isSelected, 
+  onSelect,
+  currentUser
+}: { 
+  conv: SelectedConversation; 
+  isSelected: boolean; 
+  onSelect: (c: SelectedConversation) => void;
+  currentUser: any;
+}) {
+  const otherUid = conv.type === "dm" ? conv.participants.find(p => p !== currentUser?.uid) : undefined;
+  const liveProfile = usePresence(otherUid);
+  
+  const label = conv.type === "dm" ? (liveProfile?.displayName || conv.other.displayName) : conv.name;
+  const photo = conv.type === "dm" ? (liveProfile?.photoURL || conv.other.photoURL) : conv.photoURL;
+  const isOnline = conv.type === "dm" ? liveProfile?.status === "online" : undefined;
+  const isPending = conv.type === "dm" && conv.status === "pending";
+  const unread = currentUser ? conv.unreadCount?.[currentUser.uid] : 0;
+
+  return (
+    <motion.button
+      onClick={() => onSelect(conv)}
+      whileHover={{ scale: 1.01 }}
+      whileTap={{ scale: 0.98 }}
+      transition={spring}
+      className="w-full relative p-3 rounded-xl flex items-center gap-3 text-left focus:outline-none"
+    >
+      {/* Selection bg pill */}
+      {isSelected && (
+        <motion.div
+          layoutId="chatlist-selection-pill"
+          className="absolute inset-0 bg-zinc-800/80 border border-zinc-700/20 rounded-xl"
+          transition={spring}
+        />
+      )}
+
+      <div className="relative z-10 flex items-center gap-3 w-full">
+        <Avatar 
+          name={label} 
+          photoURL={photo} 
+          size={10} 
+          online={isOnline}
+        />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between">
+            <span className="font-medium text-sm text-zinc-200 truncate">{label}</span>
+            {isPending ? (
+              <span className="text-[10px] font-medium text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-full border border-amber-500/20 ml-2 flex-shrink-0">
+                Pending
+              </span>
+            ) : (
+              unread ? (
+                <span className="w-5 h-5 flex items-center justify-center bg-[#3dfc82] text-[#0b0c10] text-[10px] font-bold rounded-full ml-2 flex-shrink-0 animate-in zoom-in duration-300">
+                  {unread}
+                </span>
+              ) : null
+            )}
+          </div>
+          <div className="flex items-center justify-between mt-0.5">
+            <p className="text-xs text-zinc-600 truncate flex-1 pr-2">
+              {conv.type === "dm" ? (isPending ? "Connection request" : liveProfile?.bio || conv.other.bio || "No messages yet") : "Group conversation"}
+            </p>
+            {conv.type === "dm" && !isPending && !isOnline && (
+              <span className="text-[10px] text-zinc-700 whitespace-nowrap">
+                {liveProfile?.lastSeen 
+                  ? formatDistanceToNow((liveProfile.lastSeen as any).toDate(), { addSuffix: true })
+                  : ""}
+              </span>
+            )}
+          </div>
         </div>
+      </div>
+    </motion.button>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+const ChatList = ({ selected, onSelect, view, onNewChat, onNewGroup }: ChatListProps) => {
+  const { user: currentUser } = useAuth();
+  const [subTab, setSubTab] = useState<SubTab>("all");
+  const [search, setSearch] = useState("");
+  const [dmChats, setDmChats] = useState<SelectedConversation[]>([]);
+  const [groups, setGroups] = useState<SelectedConversation[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // ─── DM Chats listener ────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const q = query(
+      collection(db, COLLECTIONS.CHATS),
+      where("participants", "array-contains", currentUser.uid),
+      orderBy("lastMessageAt", "desc")
     );
+
+    const unsub: Unsubscribe = onSnapshot(q, async (snap) => {
+      const results: SelectedConversation[] = [];
+      for (const docSnap of snap.docs) {
+        const chat = docSnap.data() as ChatDoc;
+        const otherUid = chat.participants.find((p) => p !== currentUser.uid)!;
+
+        // Fetch the other user's profile once (initial load)
+        const userSnap = await getDoc(doc(db, COLLECTIONS.USERS, otherUid));
+        if (!userSnap.exists()) continue;
+        const other = userSnap.data() as FirestoreUser;
+
+        results.push({
+          type: "dm",
+          chatId: docSnap.id,
+          other,
+          participants: chat.participants,
+          status: chat.status,
+          requestedBy: chat.requestedBy,
+          unreadCount: (chat as any).unreadCount,
+          lastRead: (chat as any).lastRead,
+        });
+      }
+      setDmChats(results);
+      setLoading(false);
+    });
+
+    return unsub;
+  }, [currentUser]);
+
+  // ─── Groups listener ──────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const q = query(
+      collection(db, COLLECTIONS.GROUPS),
+      where("members", "array-contains-any", [
+        { uid: currentUser.uid, status: "accepted" },
+        { uid: currentUser.uid, status: "pending" },
+      ])
+    );
+
+    const unsub: Unsubscribe = onSnapshot(q, (snap) => {
+      const results: SelectedConversation[] = snap.docs.map((d) => {
+        const g = d.data() as GroupDoc;
+        return {
+          type: "group",
+          groupId: d.id,
+          name: g.name,
+          photoURL: g.photoURL,
+          members: g.members,
+          adminId: g.adminId,
+          unreadCount: (g as any).unreadCount,
+          lastRead: (g as any).lastRead,
+        };
+      });
+      setGroups(results);
+      setLoading(false);
+    });
+
+    return unsub;
+  }, [currentUser]);
+
+  // ─── Derived list ─────────────────────────────────────────────────────────
+  const rawList = view === "messages" ? dmChats : groups;
+
+  const filtered = rawList.filter((conv) => {
+    const label = conv.type === "dm" ? conv.other.displayName : conv.name;
+    const matchesSearch = label.toLowerCase().includes(search.toLowerCase());
+    if (!matchesSearch) return false;
+    if (subTab === "pending" && conv.type === "dm" && conv.status !== "pending") return false;
+    return true;
+  });
+
+  return (
+    <div className="w-80 flex-shrink-0 border-r border-zinc-800/40 flex flex-col bg-[#12141c] h-full">
+      {/* Header */}
+      <div className="p-5 pb-3">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base font-semibold tracking-tight text-zinc-100">
+            {view === "messages" ? "Messages" : "Groups"}
+          </h2>
+          <motion.button
+            onClick={view === "messages" ? onNewChat : onNewGroup}
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.92 }}
+            transition={spring}
+            className="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl hover:bg-emerald-500/20 transition-colors"
+            title={view === "messages" ? "New message" : "New group"}
+          >
+            {view === "messages" ? <Plus size={16} weight="bold" /> : <UsersThree size={16} weight="bold" />}
+          </motion.button>
+        </div>
+
+        {/* Search */}
+        <div className="relative mb-3">
+          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={15} />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={view === "messages" ? "Search messages..." : "Search groups..."}
+            className="w-full pl-9 pr-3 py-2.5 bg-zinc-900/60 border border-zinc-800/60 focus:border-zinc-700/80 rounded-xl text-sm text-zinc-300 placeholder:text-zinc-600 outline-none transition-all"
+          />
+        </div>
+
+        <SubTabs active={subTab} onChange={setSubTab} />
+      </div>
+
+      {/* Conversation List */}
+      <div className="flex-1 overflow-y-auto px-3 space-y-0.5 pb-4">
+        {loading ? (
+          <div className="space-y-1">
+            <ChatItemSkeleton />
+            <ChatItemSkeleton />
+            <ChatItemSkeleton />
+          </div>
+        ) : (
+          <AnimatePresence>
+            {filtered.length > 0 ? (
+              filtered.map((conv) => {
+                const id = conv.type === "dm" ? conv.chatId : conv.groupId;
+                const isSelected =
+                  selected?.type === conv.type &&
+                  (selected.type === "dm" ? selected.chatId === (conv as { chatId: string }).chatId : (selected as { groupId: string }).groupId === (conv as { groupId: string }).groupId);
+
+                return (
+                  <ChatListItem 
+                    key={id} 
+                    conv={conv} 
+                    isSelected={isSelected} 
+                    onSelect={onSelect} 
+                    currentUser={currentUser} 
+                  />
+                );
+              })
+            ) : (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex flex-col items-center justify-center h-48 text-center px-4"
+              >
+                <p className="text-sm text-zinc-600 font-medium">
+                  {search ? "No results found" : view === "messages" ? "No conversations yet" : "No groups yet"}
+                </p>
+                <p className="text-xs text-zinc-700 mt-1">
+                  {!search && (view === "messages" ? "Start a new chat" : "Create or join a group")}
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        )}
+      </div>
+    </div>
+  );
 };
 
 export default ChatList;
