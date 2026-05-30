@@ -3,8 +3,11 @@
 import React from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useAuth } from "@/context/AuthContext";
 
 const Hero = () => {
+    const { user, loading } = useAuth();
+
     return (
         <section className="relative min-h-screen flex flex-col items-center justify-center pt-32 pb-20 px-6 overflow-hidden">
             {/* Background Decorations */}
@@ -20,7 +23,7 @@ const Hero = () => {
                     <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                     <span className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-primary">Next-Gen Messaging</span>
                 </motion.div>
-                
+
                 <motion.h1
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -30,7 +33,7 @@ const Hero = () => {
                     Messaging for the <br />
                     <span className="text-gradient">Zero-Trust Era.</span>
                 </motion.h1>
-                
+
                 <motion.p
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -39,7 +42,7 @@ const Hero = () => {
                 >
                     Chatly is a serverless real-time platform with dual-layer permissions and hierarchical group structures. Built for security, designed for speed.
                 </motion.p>
-                
+
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -49,6 +52,7 @@ const Hero = () => {
                     <Link href="/register" className="w-full sm:w-auto px-10 py-5 bg-primary text-primary-foreground rounded-2xl font-bold shadow-xl shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:-translate-y-1 transition-all duration-300 text-center">
                         Get Started Free
                     </Link>
+
                     <Link href="/about" className="w-full sm:w-auto px-10 py-5 glass border border-border rounded-2xl font-bold hover:bg-secondary transition-all duration-300 text-center">
                         How it Works
                     </Link>
@@ -78,7 +82,7 @@ const Hero = () => {
                     </div>
                 </div>
             </motion.div>
-            
+
             {/* Background Decorations */}
             <div className="absolute top-1/4 -left-20 w-96 h-96 bg-emerald-500/5 blur-[120px] rounded-full pointer-events-none" />
             <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-cyan-500/5 blur-[120px] rounded-full pointer-events-none" />
