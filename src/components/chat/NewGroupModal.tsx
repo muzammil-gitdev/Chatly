@@ -50,7 +50,7 @@ const NewGroupModal = ({ onClose }: NewGroupModalProps) => {
       u.email.toLowerCase().includes(search.toLowerCase())
   );
 
-  const toggleSelect = (uid: string) =>
+  const handleToggle = (uid: string) =>
     setSelected((prev) =>
       prev.includes(uid) ? prev.filter((id) => id !== uid) : [...prev, uid]
     );
@@ -99,11 +99,11 @@ const NewGroupModal = ({ onClose }: NewGroupModalProps) => {
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.96, opacity: 0 }}
           transition={spring}
-          className="w-full max-w-md bg-[#12141c] border border-zinc-800/50 rounded-2xl overflow-hidden shadow-2xl"
+          className="w-full max-w-md bg-white dark:bg-[#12141c] border border-zinc-200 dark:border-zinc-800/50 rounded-2xl overflow-hidden shadow-2xl"
         >
-          <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800/40">
-            <h2 className="text-sm font-semibold tracking-tight text-zinc-100">Create Group</h2>
-            <button onClick={onClose} className="p-1.5 text-zinc-500 hover:text-zinc-200 rounded-lg transition-colors">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-200 dark:border-zinc-800/40">
+            <h2 className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">Create Group</h2>
+            <button onClick={onClose} className="p-1.5 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 rounded-lg transition-colors">
               <X size={18} />
             </button>
           </div>
@@ -115,27 +115,27 @@ const NewGroupModal = ({ onClose }: NewGroupModalProps) => {
 
             <input
               type="text"
-              placeholder="Group name *"
+              placeholder="Group Name"
               value={groupName}
               onChange={(e) => setGroupName(e.target.value)}
-              className="w-full px-4 py-3 bg-zinc-900/60 border border-zinc-800/60 focus:border-zinc-700/80 rounded-xl text-sm text-zinc-200 placeholder:text-zinc-600 outline-none transition-all"
+              className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/60 focus:border-emerald-500/50 rounded-xl text-sm text-zinc-900 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 outline-none transition-all shadow-sm dark:shadow-none"
             />
             <input
               type="text"
               placeholder="Description (optional)"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-4 py-3 bg-zinc-900/60 border border-zinc-800/60 focus:border-zinc-700/80 rounded-xl text-sm text-zinc-200 placeholder:text-zinc-600 outline-none transition-all"
+              className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/60 focus:border-emerald-500/50 rounded-xl text-sm text-zinc-900 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 outline-none transition-all shadow-sm dark:shadow-none"
             />
-
+            
             <div className="relative">
-              <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={15} />
+              <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
               <input
                 type="text"
+                placeholder="Search to add members..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search members..."
-                className="w-full pl-9 pr-3 py-2.5 bg-zinc-900/60 border border-zinc-800/60 focus:border-zinc-700/80 rounded-xl text-sm text-zinc-300 placeholder:text-zinc-600 outline-none transition-all"
+                className="w-full pl-9 pr-4 py-2 bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800/40 focus:border-emerald-500/50 rounded-xl text-sm text-zinc-900 dark:text-zinc-300 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 outline-none transition-all shadow-sm dark:shadow-none"
               />
             </div>
 
@@ -148,10 +148,10 @@ const NewGroupModal = ({ onClose }: NewGroupModalProps) => {
                   return (
                     <motion.button
                       key={uid}
-                      onClick={() => toggleSelect(uid)}
+                      onClick={() => handleToggle(uid)}
                       whileHover={{ scale: 1.04 }}
                       whileTap={{ scale: 0.96 }}
-                      className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 rounded-full text-xs font-medium"
+                      className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-full text-xs font-medium"
                     >
                       {u.displayName} <X size={10} />
                     </motion.button>
@@ -170,31 +170,31 @@ const NewGroupModal = ({ onClose }: NewGroupModalProps) => {
                 filtered.map((u) => {
                   const isSelected = selected.includes(u.uid);
                   return (
-                    <motion.button
+                    <div
                       key={u.uid}
-                      onClick={() => toggleSelect(u.uid)}
-                      whileHover={{ scale: 1.01 }}
-                      whileTap={{ scale: 0.98 }}
-                      transition={spring}
-                      className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-zinc-800/60 transition-colors text-left"
+                      className={`flex items-center gap-3 p-2 rounded-xl border transition-all cursor-pointer ${
+                        isSelected
+                          ? "bg-emerald-500/10 border-emerald-500/40"
+                          : "bg-zinc-50 dark:bg-zinc-900/40 border-zinc-200 dark:border-zinc-800/40 hover:border-zinc-300 dark:hover:border-zinc-700/60"
+                      }`}
+                      onClick={() => handleToggle(u.uid)}
                     >
-                      <div className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden bg-zinc-800 border border-zinc-700/30">
+                      <div className="w-8 h-8 rounded-full overflow-hidden bg-zinc-200 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700/40 flex-shrink-0">
                         {u.photoURL ? (
                           <Image src={u.photoURL} alt={u.displayName} width={32} height={32} className="w-full h-full object-cover" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-emerald-500/10 text-emerald-400 text-xs font-semibold">
+                          <div className="w-full h-full flex items-center justify-center bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-semibold">
                             {u.displayName[0]?.toUpperCase()}
                           </div>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-zinc-200 truncate">{u.displayName}</p>
-                        <p className="text-xs text-zinc-600 truncate">{u.email}</p>
+                        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-200 truncate">{u.displayName}</p>
                       </div>
-                      <div className={`w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors ${isSelected ? "bg-emerald-500 border-emerald-500" : "border-zinc-700"}`}>
-                        {isSelected && <Check size={10} className="text-white" />}
+                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${isSelected ? "border-emerald-500 bg-emerald-500" : "border-zinc-300 dark:border-zinc-600"}`}>
+                        {isSelected && <Check size={10} weight="bold" className="text-white" />}
                       </div>
-                    </motion.button>
+                    </div>
                   );
                 })
               )}

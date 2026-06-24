@@ -3,8 +3,8 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-inter: var(--font-inter);
-  --font-outfit: var(--font-outfit);
+  --font-inter: "Inter", sans-serif;
+  --font-outfit: "Outfit", sans-serif;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);

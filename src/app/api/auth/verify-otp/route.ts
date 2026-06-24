@@ -63,6 +63,10 @@ export async function POST(request: NextRequest) {
       location: "",
       isActivated: true,
       createdAt: serverTimestamp(),
+      settings: { theme: "dark", notificationsEnabled: true },
+      blockedUsers: [],
+      acceptedContacts: [],
+      fcmTokens: [],
     });
 
     // Clean up the OTP document

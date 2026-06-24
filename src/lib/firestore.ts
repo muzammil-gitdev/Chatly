@@ -36,11 +36,15 @@ export interface FirestoreUser {
   status: "online" | "offline";
   lastSeen: any; // Firestore Timestamp
   createdAt: unknown; // Firestore Timestamp
+  fcmTokens?: string[];
+  settings?: { theme: "dark" | "light"; notificationsEnabled: boolean };
+  blockedUsers?: string[];
+  acceptedContacts?: string[];
 }
 
 export interface ChatDoc {
   participants: [string, string];
-  status: "pending" | "active";
+  status: "pending" | "active" | "rejected";
   requestedBy: string;
   createdAt: unknown;
   lastMessage?: string;

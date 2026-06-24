@@ -17,10 +17,11 @@ export interface UploadResult {
 // ─── Upload avatar (always overwrites the same public_id) ────────────────────
 export async function uploadAvatar(
   fileBuffer: Buffer,
-  uid: string
+  id: string,
+  type: "profile" | "group" = "profile"
 ): Promise<UploadResult> {
   return new Promise((resolve, reject) => {
-    const publicId = `chatly/profiles/${uid}`;
+    const publicId = `chatly/${type}s/${id}`;
 
     const uploadStream = cloudinary.uploader.upload_stream(
       {

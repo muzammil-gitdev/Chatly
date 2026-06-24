@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -15,7 +15,9 @@ import {
   FloppyDisk,
 } from "@phosphor-icons/react";
 import { useAuth } from "@/context/AuthContext";
-import { updateUser } from "@/lib/firestore";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { COLLECTIONS, updateUser } from "@/lib/firestore";
 import { useTheme } from "@/components/ui/ThemeProvider";
 
 const spring = { type: "spring", stiffness: 300, damping: 25 } as const;
@@ -57,7 +59,7 @@ function Field({
           value={value}
           onChange={(e) => onChange?.(e.target.value)}
           disabled={disabled}
-          className="w-full pl-10 pr-4 py-3 bg-[#161922] border border-zinc-800/60 focus:border-emerald-500/30 rounded-xl text-sm text-zinc-200 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-zinc-700"
+          className="w-full pl-10 pr-4 py-3 bg-zinc-50 dark:bg-[#161922] border border-zinc-200 dark:border-zinc-800/60 focus:border-emerald-500/50 dark:focus:border-emerald-500/30 rounded-xl text-sm text-zinc-900 dark:text-zinc-200 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-zinc-500 dark:placeholder:text-zinc-700"
         />
       </div>
       {hint && <p className="text-[11px] text-zinc-600 ml-1">{hint}</p>}
@@ -69,7 +71,6 @@ function Field({
 const THEME_OPTIONS: { id: string; label: string; preview: string }[] = [
   { id: "dark", label: "Dark", preview: "bg-zinc-900 border-zinc-700" },
   { id: "light", label: "Light", preview: "bg-zinc-100 border-zinc-300" },
-  { id: "system", label: "System", preview: "bg-gradient-to-r from-zinc-900 to-zinc-100 border-zinc-500" },
 ];
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -90,6 +91,71 @@ const SettingsPanel = () => {
 
   const set = (key: keyof typeof form) => (val: string) =>
     setForm((p) => ({ ...p, [key]: val }));
+
+  const [blockedProfiles, setBlockedProfiles] = useState<{uid: string, name: string}[]>([]);
+  
+  useEffect(() => {
+    if (!profile?.blockedUsers?.length) {
+      setTimeout(() => setBlockedProfiles([]), 0);
+      return;
+    }
+    const fetchBlocked = async () => {
+      const names = await Promise.all(
+        profile.blockedUsers!.map(async (id) => {
+          const snap = await getDoc(doc(db, COLLECTIONS.USERS, id));
+          return { uid: id, name: snap.exists() ? snap.data().displayName : "Unknown User" };
+        })
+      );
+      setBlockedProfiles(names);
+    };
+    fetchBlocked();
+  }, [profile?.blockedUsers]);
+
+  const handleUnblock = async (uidToUnblock: string) => {
+    if (!user) return;
+    const newBlocked = (profile?.blockedUsers || []).filter(id => id !== uidToUnblock);
+    await updateUser(user.uid, { blockedUsers: newBlocked });
+  };
+
+  const handleThemeChange = async (newTheme: "dark" | "light") => {
+    if (!user) return;
+    setTheme(newTheme);
+    await updateUser(user.uid, { "settings.theme": newTheme } as any);
+  };
+
+  const [browserPerm, setBrowserPerm] = useState<NotificationPermission>("default");
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      setBrowserPerm(Notification.permission);
+    }
+  }, []);
+
+  const handleNotifToggle = async () => {
+    if (!user) return;
+    const isProfileEnabled = profile?.settings?.notificationsEnabled ?? true;
+    const isActuallyEnabled = isProfileEnabled && browserPerm === "granted";
+    
+    // If it's not actually enabled, we turn it ON (which means requesting permission)
+    if (!isActuallyEnabled) {
+      try {
+        const { requestFCMToken } = await import("@/lib/fcm");
+        const token = await requestFCMToken(user.uid);
+        if (token && typeof window !== "undefined" && "Notification" in window) {
+          setBrowserPerm(Notification.permission);
+          await updateUser(user.uid, { "settings.notificationsEnabled": true } as any);
+        } else if (Notification.permission === "denied") {
+          alert("You have blocked notifications in your browser. Please enable them in your browser settings.");
+          setBrowserPerm("denied");
+        }
+      } catch (e) {
+        console.error("Failed to enable notifications", e);
+      }
+    } else {
+      // Turn it OFF
+      await updateUser(user.uid, { "settings.notificationsEnabled": false } as any);
+    }
+  };
 
   const handleSave = async () => {
     if (!user) return;
@@ -115,7 +181,8 @@ const SettingsPanel = () => {
     try {
       const fd = new FormData();
       fd.append("file", file);
-      fd.append("uid", user.uid);
+      fd.append("id", user.uid);
+      fd.append("type", "profile");
       const res = await fetch("/api/upload", { method: "POST", body: fd });
       if (!res.ok) throw new Error("Upload failed");
       const { url } = await res.json();
@@ -126,16 +193,16 @@ const SettingsPanel = () => {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#0e1015]">
+    <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-[#0e1015]">
       <div className="max-w-2xl mx-auto px-6 py-10 space-y-8">
         {/* Header */}
         <div>
-          <h1 className="text-xl font-semibold tracking-tight text-zinc-100">Settings</h1>
+          <h1 className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">Settings</h1>
           <p className="text-sm text-zinc-500 mt-1">Manage your profile and preferences.</p>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 p-1 bg-zinc-900/60 rounded-xl border border-zinc-800/40">
+        <div className="flex gap-1 p-1 bg-white dark:bg-zinc-900/60 rounded-xl border border-zinc-200 dark:border-zinc-800/40 shadow-sm dark:shadow-none">
           {TABS.map(({ id, label, Icon }) => (
             <button
               key={id}
@@ -158,7 +225,7 @@ const SettingsPanel = () => {
         </div>
 
         {/* Tab Content */}
-        <div className="bg-[#12141c] border border-zinc-800/40 rounded-2xl p-6">
+        <div className="bg-white dark:bg-[#12141c] border border-zinc-200 dark:border-zinc-800/40 rounded-2xl p-6 shadow-sm dark:shadow-none">
           <AnimatePresence mode="wait">
             {/* ─── Profile Tab ── */}
             {activeTab === "profile" && (
@@ -251,6 +318,24 @@ const SettingsPanel = () => {
                     Use the <span className="text-zinc-300">Forgot password?</span> flow on the login page to reset your password via email verification.
                   </p>
                 </div>
+
+                <div className="pt-4 border-t border-zinc-800/40">
+                  <p className="text-sm font-medium text-red-400 mb-3">Blocked Users</p>
+                  {blockedProfiles.length === 0 ? (
+                    <p className="text-xs text-zinc-500">You have not blocked any users.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {blockedProfiles.map(b => (
+                        <div key={b.uid} className="flex items-center justify-between py-2 border-b border-zinc-800/30 last:border-0">
+                          <p className="text-sm text-zinc-300">{b.name}</p>
+                          <button onClick={() => handleUnblock(b.uid)} className="text-xs font-medium text-emerald-400 hover:text-emerald-300 transition-colors">
+                            Unblock
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </motion.div>
             )}
 
@@ -267,10 +352,12 @@ const SettingsPanel = () => {
                 <div>
                   <p className="text-sm font-medium text-zinc-200 mb-4">Theme</p>
                   <div className="grid grid-cols-3 gap-3">
-                    {THEME_OPTIONS.map((opt) => (
+                    {THEME_OPTIONS.map((opt) => {
+                      const isSelected = profile?.settings?.theme ? profile.settings.theme === opt.id : theme === opt.id;
+                      return (
                       <motion.button
                         key={opt.id}
-                        onClick={() => setTheme(opt.id as "light" | "dark")}
+                        onClick={() => handleThemeChange(opt.id as "dark" | "light")}
                         whileHover={{ scale: 1.04 }}
                         whileTap={{ scale: 0.96 }}
                         transition={spring}
@@ -282,7 +369,7 @@ const SettingsPanel = () => {
                       >
                         <div className={`w-full h-10 rounded-lg border ${opt.preview}`} />
                         <span className="text-xs font-medium text-zinc-300">{opt.label}</span>
-                        {theme === opt.id && (
+                        {isSelected && (
                           <motion.div
                             layoutId="theme-check"
                             className="absolute top-2 right-2 w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center"
@@ -290,7 +377,8 @@ const SettingsPanel = () => {
                           />
                         )}
                       </motion.button>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </motion.div>
@@ -306,21 +394,25 @@ const SettingsPanel = () => {
                 transition={spring}
                 className="space-y-4"
               >
-                {[
-                  { label: "New Messages", desc: "Get notified when you receive a new message" },
-                  { label: "Connection Requests", desc: "Get notified when someone wants to connect" },
-                  { label: "Group Invitations", desc: "Get notified when you're added to a group" },
-                ].map((item) => (
-                  <div key={item.label} className="flex items-center justify-between py-3 border-b border-zinc-800/30 last:border-0">
-                    <div>
-                      <p className="text-sm font-medium text-zinc-200">{item.label}</p>
-                      <p className="text-xs text-zinc-600 mt-0.5">{item.desc}</p>
-                    </div>
-                    <button className="w-10 h-5 rounded-full bg-emerald-500/20 border border-emerald-500/40 relative flex-shrink-0">
-                      <span className="absolute right-0.5 top-0.5 w-4 h-4 rounded-full bg-emerald-500 shadow-sm" />
-                    </button>
+                <div className="flex items-center justify-between py-3 border-b border-zinc-800/30">
+                  <div>
+                    <p className="text-sm font-medium text-zinc-200">Push Notifications</p>
+                    <p className="text-xs text-zinc-600 mt-0.5">Enable background push notifications for new messages</p>
                   </div>
-                ))}
+                  <button 
+                    onClick={handleNotifToggle}
+                    className={`w-10 h-5 rounded-full relative flex-shrink-0 transition-colors ${
+                      (profile?.settings?.notificationsEnabled ?? true) && browserPerm === "granted" ? "bg-emerald-500/20 border border-emerald-500/40" : "bg-zinc-800 border border-zinc-700"
+                    }`}
+                  >
+                    <motion.span 
+                      animate={{ x: (profile?.settings?.notificationsEnabled ?? true) && browserPerm === "granted" ? 20 : 2 }}
+                      className={`absolute top-[1px] w-4 h-4 rounded-full shadow-sm ${
+                        (profile?.settings?.notificationsEnabled ?? true) && browserPerm === "granted" ? "bg-emerald-500" : "bg-zinc-500"
+                      }`} 
+                    />
+                  </button>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

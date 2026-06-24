@@ -29,9 +29,9 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
         const systemQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
         if (savedTheme) {
-            applyTheme(savedTheme);
+            setTimeout(() => applyTheme(savedTheme), 0);
         } else {
-            applyTheme(systemQuery.matches ? "dark" : "light");
+            setTimeout(() => applyTheme(systemQuery.matches ? "dark" : "light"), 0);
             
             const handler = (e: MediaQueryListEvent) => {
                 if (!localStorage.getItem("theme")) {

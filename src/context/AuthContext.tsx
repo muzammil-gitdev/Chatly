@@ -23,6 +23,7 @@ import {
 } from "firebase/firestore";
 import { COLLECTIONS, type FirestoreUser } from "@/lib/firestore";
 import Cookies from "js-cookie";
+import { requestFCMToken, setupForegroundMessaging } from "@/lib/fcm";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface AuthContextValue {
@@ -51,6 +52,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Persist session token for middleware route guard
         const token = await firebaseUser.getIdToken();
         Cookies.set("chatly_session", token, { expires: 7, sameSite: "lax" });
+        
+        // Always request FCM token on login — requestFCMToken handles permission internally
+        if (typeof window !== "undefined" && "Notification" in window && Notification.permission !== "denied") {
+          requestFCMToken(firebaseUser.uid);
+        }
+        setupForegroundMessaging();
       } else {
         Cookies.remove("chatly_session");
         setProfile(null);
@@ -73,6 +80,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return unsubscribeProfile;
   }, [user]);
+
+  // ─── Apply Theme ────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (profile?.settings?.theme === "light") {
+      document.documentElement.classList.remove("dark");
+      document.documentElement.classList.add("light");
+    } else {
+      document.documentElement.classList.remove("light");
+      document.documentElement.classList.add("dark");
+    }
+  }, [profile?.settings?.theme]);
 
   // ─── Presence Logic ────────────────────────────────────────────────────────
   useEffect(() => {

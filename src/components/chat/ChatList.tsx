@@ -30,7 +30,7 @@ export type SelectedConversation =
       chatId: string;
       other: FirestoreUser;
       participants: string[];
-      status: "pending" | "active";
+      status: "pending" | "active" | "rejected";
       requestedBy: string;
       unreadCount?: Record<string, number>;
       lastRead?: Record<string, any>;
@@ -299,11 +299,10 @@ const ChatList = ({ selected, onSelect, view, onNewChat, onNewGroup }: ChatListP
   });
 
   return (
-    <div className="w-80 flex-shrink-0 border-r border-zinc-800/40 flex flex-col bg-[#12141c] h-full">
-      {/* Header */}
-      <div className="p-5 pb-3">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold tracking-tight text-zinc-100">
+    <div className="w-80 flex-shrink-0 border-r border-zinc-200 dark:border-zinc-800/40 flex flex-col bg-zinc-50 dark:bg-[#12141c] h-full">
+      {/* ─── Header ── */}
+      <header className="h-[60px] border-b border-zinc-200 dark:border-zinc-800/40 px-5 flex items-center justify-between flex-shrink-0 bg-white/50 dark:bg-[#12141c]/50 backdrop-blur-md">
+          <h2 className="text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
             {view === "messages" ? "Messages" : "Groups"}
           </h2>
           <motion.button
@@ -311,25 +310,24 @@ const ChatList = ({ selected, onSelect, view, onNewChat, onNewGroup }: ChatListP
             whileHover={{ scale: 1.08 }}
             whileTap={{ scale: 0.92 }}
             transition={spring}
-            className="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl hover:bg-emerald-500/20 transition-colors"
+            className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl hover:bg-emerald-500/20 transition-colors"
             title={view === "messages" ? "New message" : "New group"}
           >
             {view === "messages" ? <Plus size={16} weight="bold" /> : <UsersThree size={16} weight="bold" />}
           </motion.button>
-        </div>
+        </header>
 
-        {/* Search */}
-        <div className="relative mb-3">
-          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={15} />
+        <div className="px-5 py-3">
+        <div className="relative group">
+          <MagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-emerald-500 transition-colors" size={16} />
           <input
             type="text"
+            placeholder={view === "messages" ? "Search messages..." : "Search groups..."}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder={view === "messages" ? "Search messages..." : "Search groups..."}
-            className="w-full pl-9 pr-3 py-2.5 bg-zinc-900/60 border border-zinc-800/60 focus:border-zinc-700/80 rounded-xl text-sm text-zinc-300 placeholder:text-zinc-600 outline-none transition-all"
+            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/60 focus:border-emerald-500/50 rounded-xl text-sm text-zinc-900 dark:text-zinc-200 placeholder:text-zinc-500 outline-none transition-all shadow-sm dark:shadow-none"
           />
         </div>
-
         <SubTabs active={subTab} onChange={setSubTab} />
       </div>
 

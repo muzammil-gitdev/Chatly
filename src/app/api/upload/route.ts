@@ -5,14 +5,15 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File;
-    const uid = formData.get("uid") as string;
+    const id = (formData.get("id") || formData.get("uid")) as string;
+    const type = (formData.get("type") as "profile" | "group") || "profile";
 
-    if (!file || !uid) {
-      return NextResponse.json({ error: "Missing file or uid" }, { status: 400 });
+    if (!file || !id) {
+      return NextResponse.json({ error: "Missing file or id" }, { status: 400 });
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const result = await uploadAvatar(buffer, uid);
+    const result = await uploadAvatar(buffer, id, type);
 
     return NextResponse.json(result);
   } catch (error: any) {
