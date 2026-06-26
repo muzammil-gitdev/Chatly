@@ -83,12 +83,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ─── Apply Theme ────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (profile?.settings?.theme === "light") {
-      document.documentElement.classList.remove("dark");
-      document.documentElement.classList.add("light");
-    } else {
-      document.documentElement.classList.remove("light");
-      document.documentElement.classList.add("dark");
+    if (profile?.settings?.theme) {
+      const current = localStorage.getItem("theme");
+      if (current !== profile.settings.theme) {
+        localStorage.setItem("theme", profile.settings.theme);
+        if (profile.settings.theme === "light") {
+          document.documentElement.classList.remove("dark");
+        } else {
+          document.documentElement.classList.add("dark");
+        }
+      }
     }
   }, [profile?.settings?.theme]);
 

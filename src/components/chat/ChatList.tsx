@@ -34,6 +34,8 @@ export type SelectedConversation =
       requestedBy: string;
       unreadCount?: Record<string, number>;
       lastRead?: Record<string, any>;
+      lastMessage?: string;
+      lastMessageAt?: any;
     }
   | {
       type: "group";
@@ -45,6 +47,9 @@ export type SelectedConversation =
       requestedBy?: string;
       unreadCount?: Record<string, number>;
       lastRead?: Record<string, any>;
+      lastMessage?: string;
+      lastMessageAt?: any;
+      description?: string;
     };
 
 interface ChatListProps {
@@ -60,17 +65,21 @@ type SubTab = "all" | "pending";
 // ─── Sub-tab pill ─────────────────────────────────────────────────────────────
 function SubTabs({ active, onChange }: { active: SubTab; onChange: (t: SubTab) => void }) {
   return (
-    <div className="flex gap-1 p-1 bg-zinc-900/60 rounded-xl mb-3">
+    <div className="flex gap-1 p-1 bg-zinc-200/50 dark:bg-zinc-900/60 backdrop-blur-3xl rounded-xl mb-3 border border-white/50 dark:border-white/5 shadow-inner">
       {(["all", "pending"] as SubTab[]).map((tab) => (
         <button
           key={tab}
           onClick={() => onChange(tab)}
-          className="relative flex-1 py-1.5 text-xs font-medium rounded-lg capitalize text-zinc-400 hover:text-zinc-200 transition-colors"
+          className={`relative flex-1 py-1.5 text-xs rounded-lg capitalize transition-colors ${
+            active === tab 
+              ? "text-zinc-900 dark:text-white font-bold" 
+              : "text-zinc-500 dark:text-zinc-400 font-medium hover:text-zinc-700 dark:hover:text-zinc-200"
+          }`}
         >
           {active === tab && (
             <motion.div
               layoutId="chatlist-subtab-pill"
-              className="absolute inset-0 bg-zinc-800 rounded-lg"
+              className="absolute inset-0 bg-white dark:bg-zinc-800 shadow-sm dark:shadow-none rounded-lg border border-zinc-200/50 dark:border-transparent"
               transition={spring}
             />
           )}
@@ -161,7 +170,7 @@ function ChatListItem({
       {isSelected && (
         <motion.div
           layoutId="chatlist-selection-pill"
-          className="absolute inset-0 bg-zinc-800/80 border border-zinc-700/20 rounded-xl"
+          className="absolute inset-0 bg-white dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700/20 shadow-sm dark:shadow-none rounded-xl"
           transition={spring}
         />
       )}
@@ -175,7 +184,7 @@ function ChatListItem({
         />
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
-            <span className="font-medium text-sm text-zinc-200 truncate">{label}</span>
+            <span className="font-medium text-sm text-zinc-900 dark:text-zinc-200 truncate">{label}</span>
             {isPending ? (
               <span className="text-[10px] font-medium text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-full border border-amber-500/20 ml-2 flex-shrink-0">
                 Pending
@@ -189,11 +198,15 @@ function ChatListItem({
             )}
           </div>
           <div className="flex items-center justify-between mt-0.5">
-            <p className="text-xs text-zinc-600 truncate flex-1 pr-2">
-              {conv.type === "dm" ? (isPending ? "Connection request" : liveProfile?.bio || conv.other.bio || "No messages yet") : "Group conversation"}
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate flex-1 pr-2">
+              {conv.type === "dm" 
+                ? (isPending 
+                    ? "Connection request" 
+                    : conv.lastMessage || "No messages yet") 
+                : (conv.lastMessage || "Group conversation")}
             </p>
             {conv.type === "dm" && !isPending && !isOnline && (
-              <span className="text-[10px] text-zinc-700 whitespace-nowrap">
+              <span className="text-[10px] text-zinc-400 dark:text-zinc-500 whitespace-nowrap">
                 {liveProfile?.lastSeen 
                   ? formatDistanceToNow((liveProfile.lastSeen as any).toDate(), { addSuffix: true })
                   : ""}
@@ -213,7 +226,8 @@ const ChatList = ({ selected, onSelect, view, onNewChat, onNewGroup }: ChatListP
   const [search, setSearch] = useState("");
   const [dmChats, setDmChats] = useState<SelectedConversation[]>([]);
   const [groups, setGroups] = useState<SelectedConversation[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingDms, setLoadingDms] = useState(true);
+  const [loadingGroups, setLoadingGroups] = useState(true);
 
   // ─── DM Chats listener ────────────────────────────────────────────────────
   useEffect(() => {
@@ -226,17 +240,16 @@ const ChatList = ({ selected, onSelect, view, onNewChat, onNewGroup }: ChatListP
     );
 
     const unsub: Unsubscribe = onSnapshot(q, async (snap) => {
-      const results: SelectedConversation[] = [];
-      for (const docSnap of snap.docs) {
+      const promises = snap.docs.map(async (docSnap) => {
         const chat = docSnap.data() as ChatDoc;
         const otherUid = chat.participants.find((p) => p !== currentUser.uid)!;
 
         // Fetch the other user's profile once (initial load)
         const userSnap = await getDoc(doc(db, COLLECTIONS.USERS, otherUid));
-        if (!userSnap.exists()) continue;
+        if (!userSnap.exists()) return null;
         const other = userSnap.data() as FirestoreUser;
 
-        results.push({
+        return {
           type: "dm",
           chatId: docSnap.id,
           other,
@@ -245,10 +258,14 @@ const ChatList = ({ selected, onSelect, view, onNewChat, onNewGroup }: ChatListP
           requestedBy: chat.requestedBy,
           unreadCount: (chat as any).unreadCount,
           lastRead: (chat as any).lastRead,
-        });
-      }
+          lastMessage: chat.lastMessage,
+          lastMessageAt: chat.lastMessageAt,
+        } as SelectedConversation;
+      });
+
+      const results = (await Promise.all(promises)).filter(Boolean) as SelectedConversation[];
       setDmChats(results);
-      setLoading(false);
+      setLoadingDms(false);
     });
 
     return unsub;
@@ -278,10 +295,13 @@ const ChatList = ({ selected, onSelect, view, onNewChat, onNewGroup }: ChatListP
           adminId: g.adminId,
           unreadCount: (g as any).unreadCount,
           lastRead: (g as any).lastRead,
+          lastMessage: g.lastMessage,
+          lastMessageAt: g.lastMessageAt,
+          description: g.description,
         };
       });
       setGroups(results);
-      setLoading(false);
+      setLoadingGroups(false);
     });
 
     return unsub;
@@ -333,7 +353,7 @@ const ChatList = ({ selected, onSelect, view, onNewChat, onNewGroup }: ChatListP
 
       {/* Conversation List */}
       <div className="flex-1 overflow-y-auto px-3 space-y-0.5 pb-4">
-        {loading ? (
+        {(view === "messages" ? loadingDms : loadingGroups) ? (
           <div className="space-y-1">
             <ChatItemSkeleton />
             <ChatItemSkeleton />

@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 
 export const Skeleton = ({ className }: { className?: string }) => {
   return (
-    <div className={`relative overflow-hidden bg-white/[0.03] rounded-lg ${className}`}>
+    <div className={`relative overflow-hidden bg-zinc-200/60 dark:bg-white/[0.03] rounded-lg ${className}`}>
       <motion.div
         animate={{
           x: ["-100%", "100%"],
@@ -13,7 +13,7 @@ export const Skeleton = ({ className }: { className?: string }) => {
           duration: 1.5,
           ease: "linear",
         }}
-        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.04] to-transparent"
+        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 dark:via-white/[0.04] to-transparent"
       />
     </div>
   );

@@ -15,7 +15,7 @@ type View = "messages" | "groups" | "settings";
 // ─── Loading skeleton ─────────────────────────────────────────────────────────
 function LoadingScreen() {
   return (
-    <div className="flex h-[100dvh] bg-[#0b0c10] items-center justify-center">
+    <div className="flex h-[100dvh] bg-white dark:bg-[#0b0c10] items-center justify-center">
       <motion.div
         animate={{ opacity: [0.4, 1, 0.4] }}
         transition={{ repeat: Infinity, duration: 1.6, ease: "easeInOut" }}
@@ -33,14 +33,14 @@ function LoadingScreen() {
 // ─── Empty state ──────────────────────────────────────────────────────────────
 function EmptyState({ view }: { view: View }) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center bg-[#11131a] text-center px-8">
-      <div className="w-16 h-16 rounded-2xl bg-zinc-900/60 border border-zinc-800/40 flex items-center justify-center mb-4">
+    <div className="flex-1 flex flex-col items-center justify-center bg-zinc-50 dark:bg-[#11131a] text-center px-8">
+      <div className="w-16 h-16 rounded-2xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/40 shadow-sm dark:shadow-none flex items-center justify-center mb-4">
         <span className="text-2xl">💬</span>
       </div>
-      <h2 className="text-sm font-semibold tracking-tight text-zinc-300 mb-1">
+      <h2 className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-300 mb-1">
         {view === "groups" ? "Select a group" : "Select a conversation"}
       </h2>
-      <p className="text-xs text-zinc-600 max-w-xs">
+      <p className="text-xs text-zinc-500 dark:text-zinc-600 max-w-xs">
         {view === "groups"
           ? "Choose a group from the list or create a new one."
           : "Choose a conversation from the list or start a new one."}
@@ -74,7 +74,7 @@ const ChatPage = () => {
   if (loading) return <LoadingScreen />;
 
   return (
-    <div className="flex h-[100dvh] bg-[#0b0c10] overflow-hidden text-zinc-100 antialiased font-sans">
+    <div className="flex h-[100dvh] bg-white dark:bg-[#0b0c10] overflow-hidden text-zinc-900 dark:text-zinc-100 antialiased font-sans">
       {/* Sidebar */}
       <Sidebar activeView={activeView} onViewChange={setActiveView} />
 
@@ -102,7 +102,7 @@ const ChatPage = () => {
       )}
 
       {/* Modals */}
-      {showNewChat && <NewChatModal onClose={() => setShowNewChat(false)} />}
+      {showNewChat && <NewChatModal onClose={() => setShowNewChat(false)} onSelect={setSelected} />}
       {showNewGroup && <NewGroupModal onClose={() => setShowNewGroup(false)} />}
     </div>
   );

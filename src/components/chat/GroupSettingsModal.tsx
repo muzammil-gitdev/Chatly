@@ -32,6 +32,7 @@ const GroupSettingsModal = ({ group, onClose }: GroupSettingsModalProps) => {
   const [users, setUsers] = useState<FirestoreUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [uploadLoading, setUploadLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -84,7 +85,7 @@ const GroupSettingsModal = ({ group, onClose }: GroupSettingsModalProps) => {
         name: groupName.trim(),
         description: description.trim()
       });
-      onClose();
+      setIsEditing(false);
     } finally {
       setSaving(false);
     }
@@ -140,7 +141,7 @@ const GroupSettingsModal = ({ group, onClose }: GroupSettingsModalProps) => {
                     </div>
                   )}
                 </div>
-                {isAdmin && (
+                {isAdmin && isEditing && (
                   <>
                     <motion.button
                       onClick={() => fileInputRef.current?.click()}
@@ -161,7 +162,7 @@ const GroupSettingsModal = ({ group, onClose }: GroupSettingsModalProps) => {
                   type="text"
                   value={groupName}
                   onChange={(e) => setGroupName(e.target.value)}
-                  disabled={!isAdmin}
+                  disabled={!isAdmin || !isEditing}
                   placeholder="Group Name"
                   className="w-full bg-transparent border-b border-zinc-300 dark:border-zinc-700 focus:border-emerald-500 outline-none text-sm font-semibold text-zinc-900 dark:text-zinc-200 py-1 disabled:border-transparent"
                 />
@@ -174,17 +175,32 @@ const GroupSettingsModal = ({ group, onClose }: GroupSettingsModalProps) => {
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                disabled={!isAdmin}
+                disabled={!isAdmin || !isEditing}
                 placeholder={isAdmin ? "Add group description..." : "No description."}
                 className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/60 focus:border-zinc-300 dark:focus:border-zinc-700/80 rounded-xl text-sm text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 outline-none transition-all resize-none h-16 disabled:opacity-80"
               />
             </div>
             
             {isAdmin && (
-              <div className="flex justify-end">
-                <button onClick={handleSaveInfo} disabled={saving} className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold shadow-lg">
-                  {saving ? "Saving..." : "Save Info"}
-                </button>
+              <div className="flex justify-end gap-2">
+                {!isEditing ? (
+                  <button onClick={() => setIsEditing(true)} className="px-4 py-1.5 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 rounded-lg text-xs font-semibold shadow-sm transition-colors">
+                    Edit Info
+                  </button>
+                ) : (
+                  <>
+                    <button onClick={() => {
+                      setIsEditing(false);
+                      setGroupName(group.name);
+                      setDescription(group.description);
+                    }} className="px-4 py-1.5 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 rounded-lg text-xs font-semibold shadow-sm transition-colors">
+                      Cancel
+                    </button>
+                    <button onClick={handleSaveInfo} disabled={saving} className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold shadow-lg transition-colors">
+                      {saving ? "Saving..." : "Save"}
+                    </button>
+                  </>
+                )}
               </div>
             )}
 

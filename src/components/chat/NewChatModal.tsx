@@ -11,11 +11,14 @@ import { useAuth } from "@/context/AuthContext";
 
 const spring = { type: "spring", stiffness: 300, damping: 25 } as const;
 
+import { type SelectedConversation } from "./ChatList";
+
 interface NewChatModalProps {
   onClose: () => void;
+  onSelect?: (conv: SelectedConversation) => void;
 }
 
-const NewChatModal = ({ onClose }: NewChatModalProps) => {
+const NewChatModal = ({ onClose, onSelect }: NewChatModalProps) => {
   const { user, profile } = useAuth();
   const [search, setSearch] = useState("");
   const [users, setUsers] = useState<FirestoreUser[]>([]);
@@ -80,6 +83,19 @@ const NewChatModal = ({ onClose }: NewChatModalProps) => {
           }, { merge: true });
         }
       }
+      
+      // Open the chat
+      if (onSelect) {
+        onSelect({
+          type: "dm",
+          chatId,
+          other: target,
+          participants: [user.uid, target.uid].sort(),
+          status: isAccepted ? "active" : "pending",
+          requestedBy: user.uid,
+        });
+      }
+      
       onClose();
     } finally {
       setCreating(null);

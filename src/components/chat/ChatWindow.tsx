@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   PaperPlaneTilt,
   Smiley,
-  Paperclip,
   DotsThreeVertical,
   ShieldCheck,
   Info
@@ -457,23 +456,6 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
               <Info size={18} />
             </motion.button>
           )}
-          <motion.button
-            whileHover={{ scale: 1.08 }}
-            whileTap={{ scale: 0.92 }}
-            transition={spring}
-            className="p-2 text-zinc-500 hover:text-zinc-200 rounded-xl transition-colors"
-            title="Encrypted"
-          >
-            <ShieldCheck size={18} />
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.08 }}
-            whileTap={{ scale: 0.92 }}
-            transition={spring}
-            className="p-2 text-zinc-500 hover:text-zinc-200 rounded-xl transition-colors"
-          >
-            <DotsThreeVertical size={18} />
-          </motion.button>
         </div>
       </header>
 
@@ -609,16 +591,7 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
             >
               <Smiley size={20} />
             </motion.button>
-            <motion.button
-              type="button"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              transition={spring}
-              className="p-2 text-zinc-500 hover:text-emerald-400 transition-colors"
-              title="Attach file"
-            >
-              <Paperclip size={20} />
-            </motion.button>
+
 
             <input
               type="text"
@@ -626,7 +599,7 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
               onChange={(e) => setInput(e.target.value)}
               disabled={isLocked}
               placeholder={isLocked ? (isRequester ? "Waiting for acceptance..." : "Accept to reply...") : "Type a message..."}
-              className="flex-1 bg-transparent border-none outline-none text-sm text-zinc-200 placeholder:text-zinc-600 disabled:cursor-not-allowed"
+              className="flex-1 bg-transparent border-none outline-none text-sm text-zinc-900 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 disabled:cursor-not-allowed"
             />
 
             <motion.button

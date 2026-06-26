@@ -22,13 +22,12 @@ import { useTheme } from "@/components/ui/ThemeProvider";
 
 const spring = { type: "spring", stiffness: 300, damping: 25 } as const;
 
-type Tab = "profile" | "account" | "appearance" | "notifications";
+type Tab = "profile" | "account" | "appearance";
 
 const TABS: { id: Tab; label: string; Icon: React.ElementType }[] = [
   { id: "profile", label: "Profile", Icon: User },
   { id: "account", label: "Account", Icon: Lock },
   { id: "appearance", label: "Appearance", Icon: Palette },
-  { id: "notifications", label: "Notifications", Icon: Bell },
 ];
 
 // ─── Fieldset input ───────────────────────────────────────────────────────────
@@ -92,8 +91,8 @@ const SettingsPanel = () => {
   const set = (key: keyof typeof form) => (val: string) =>
     setForm((p) => ({ ...p, [key]: val }));
 
-  const [blockedProfiles, setBlockedProfiles] = useState<{uid: string, name: string}[]>([]);
-  
+  const [blockedProfiles, setBlockedProfiles] = useState<{ uid: string, name: string }[]>([]);
+
   useEffect(() => {
     if (!profile?.blockedUsers?.length) {
       setTimeout(() => setBlockedProfiles([]), 0);
@@ -123,39 +122,7 @@ const SettingsPanel = () => {
     await updateUser(user.uid, { "settings.theme": newTheme } as any);
   };
 
-  const [browserPerm, setBrowserPerm] = useState<NotificationPermission>("default");
 
-  useEffect(() => {
-    if (typeof window !== "undefined" && "Notification" in window) {
-      setBrowserPerm(Notification.permission);
-    }
-  }, []);
-
-  const handleNotifToggle = async () => {
-    if (!user) return;
-    const isProfileEnabled = profile?.settings?.notificationsEnabled ?? true;
-    const isActuallyEnabled = isProfileEnabled && browserPerm === "granted";
-    
-    // If it's not actually enabled, we turn it ON (which means requesting permission)
-    if (!isActuallyEnabled) {
-      try {
-        const { requestFCMToken } = await import("@/lib/fcm");
-        const token = await requestFCMToken(user.uid);
-        if (token && typeof window !== "undefined" && "Notification" in window) {
-          setBrowserPerm(Notification.permission);
-          await updateUser(user.uid, { "settings.notificationsEnabled": true } as any);
-        } else if (Notification.permission === "denied") {
-          alert("You have blocked notifications in your browser. Please enable them in your browser settings.");
-          setBrowserPerm("denied");
-        }
-      } catch (e) {
-        console.error("Failed to enable notifications", e);
-      }
-    } else {
-      // Turn it OFF
-      await updateUser(user.uid, { "settings.notificationsEnabled": false } as any);
-    }
-  };
 
   const handleSave = async () => {
     if (!user) return;
@@ -313,9 +280,9 @@ const SettingsPanel = () => {
                   hint="Email address cannot be changed. Contact support if needed."
                 />
                 <div className="pt-4 border-t border-zinc-800/40">
-                  <p className="text-sm font-medium text-zinc-200 mb-3">Change Password</p>
+                  <p className="text-sm font-medium text-zinc-600 mb-3">Change Password</p>
                   <p className="text-xs text-zinc-500">
-                    Use the <span className="text-zinc-300">Forgot password?</span> flow on the login page to reset your password via email verification.
+                    Use the <span className="text-zinc-600">Forgot password?</span> flow on the login page to reset your password via email verification.
                   </p>
                 </div>
 
@@ -350,33 +317,32 @@ const SettingsPanel = () => {
                 className="space-y-5"
               >
                 <div>
-                  <p className="text-sm font-medium text-zinc-200 mb-4">Theme</p>
+                  <p className="text-sm font-medium text-zinc-600 mb-4">Theme</p>
                   <div className="grid grid-cols-3 gap-3">
                     {THEME_OPTIONS.map((opt) => {
                       const isSelected = profile?.settings?.theme ? profile.settings.theme === opt.id : theme === opt.id;
                       return (
-                      <motion.button
-                        key={opt.id}
-                        onClick={() => handleThemeChange(opt.id as "dark" | "light")}
-                        whileHover={{ scale: 1.04 }}
-                        whileTap={{ scale: 0.96 }}
-                        transition={spring}
-                        className={`relative flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-colors ${
-                          theme === opt.id
+                        <motion.button
+                          key={opt.id}
+                          onClick={() => handleThemeChange(opt.id as "dark" | "light")}
+                          whileHover={{ scale: 1.04 }}
+                          whileTap={{ scale: 0.96 }}
+                          transition={spring}
+                          className={`relative flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-colors ${theme === opt.id
                             ? "border-emerald-500/60 bg-emerald-500/5"
                             : "border-zinc-800/60 bg-zinc-900/40 hover:border-zinc-700/60"
-                        }`}
-                      >
-                        <div className={`w-full h-10 rounded-lg border ${opt.preview}`} />
-                        <span className="text-xs font-medium text-zinc-300">{opt.label}</span>
-                        {isSelected && (
-                          <motion.div
-                            layoutId="theme-check"
-                            className="absolute top-2 right-2 w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center"
-                            transition={spring}
-                          />
-                        )}
-                      </motion.button>
+                            }`}
+                        >
+                          <div className={`w-full h-10 rounded-lg border ${opt.preview}`} />
+                          <span className="text-xs font-medium text-zinc-600">{opt.label}</span>
+                          {isSelected && (
+                            <motion.div
+                              layoutId="theme-check"
+                              className="absolute top-2 right-2 w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center"
+                              transition={spring}
+                            />
+                          )}
+                        </motion.button>
                       );
                     })}
                   </div>
@@ -384,37 +350,7 @@ const SettingsPanel = () => {
               </motion.div>
             )}
 
-            {/* ─── Notifications Tab ── */}
-            {activeTab === "notifications" && (
-              <motion.div
-                key="notifications"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={spring}
-                className="space-y-4"
-              >
-                <div className="flex items-center justify-between py-3 border-b border-zinc-800/30">
-                  <div>
-                    <p className="text-sm font-medium text-zinc-200">Push Notifications</p>
-                    <p className="text-xs text-zinc-600 mt-0.5">Enable background push notifications for new messages</p>
-                  </div>
-                  <button 
-                    onClick={handleNotifToggle}
-                    className={`w-10 h-5 rounded-full relative flex-shrink-0 transition-colors ${
-                      (profile?.settings?.notificationsEnabled ?? true) && browserPerm === "granted" ? "bg-emerald-500/20 border border-emerald-500/40" : "bg-zinc-800 border border-zinc-700"
-                    }`}
-                  >
-                    <motion.span 
-                      animate={{ x: (profile?.settings?.notificationsEnabled ?? true) && browserPerm === "granted" ? 20 : 2 }}
-                      className={`absolute top-[1px] w-4 h-4 rounded-full shadow-sm ${
-                        (profile?.settings?.notificationsEnabled ?? true) && browserPerm === "granted" ? "bg-emerald-500" : "bg-zinc-500"
-                      }`} 
-                    />
-                  </button>
-                </div>
-              </motion.div>
-            )}
+
           </AnimatePresence>
         </div>
       </div>
