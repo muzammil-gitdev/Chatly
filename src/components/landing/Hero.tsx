@@ -30,8 +30,8 @@ const Hero = () => {
                     transition={{ duration: 0.6, delay: 0.1 }}
                     className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black leading-[1.1] tracking-tight text-foreground"
                 >
-                    Messaging for the <br />
-                    <span className="text-gradient">Zero-Trust Era.</span>
+                    Seamless Conversations, <br />
+                    <span className="text-gradient">Real-Time Connection.</span>
                 </motion.h1>
 
                 <motion.p
@@ -40,7 +40,7 @@ const Hero = () => {
                     transition={{ duration: 0.6, delay: 0.2 }}
                     className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed"
                 >
-                    Chatly is a serverless real-time platform with dual-layer permissions and hierarchical group structures. Built for security, designed for speed.
+                    Experience zero lag with secure OTP verification, real-time sync, and fluid group chats. Built for the way you actually want to communicate.
                 </motion.p>
 
                 <motion.div
@@ -50,42 +50,37 @@ const Hero = () => {
                     className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4 w-full sm:w-auto mx-auto"
                 >
                     <Link href="/register" className="w-full sm:w-auto px-10 py-5 bg-primary text-primary-foreground rounded-2xl font-bold shadow-xl shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:-translate-y-1 transition-all duration-300 text-center">
-                        Get Started Free
+                        Start Chatting Now
                     </Link>
 
-                    <Link href="/about" className="w-full sm:w-auto px-10 py-5 glass border border-border rounded-2xl font-bold hover:bg-secondary transition-all duration-300 text-center">
+                    <Link href="#how-it-works" className="w-full sm:w-auto px-10 py-5 glass border border-border rounded-2xl font-bold hover:bg-secondary transition-all duration-300 text-center">
                         How it Works
                     </Link>
                 </motion.div>
             </div>
 
-            {/* Restored Mockup Animation */}
-            <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 30 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.4 }}
-                className="max-w-5xl w-full mx-auto relative group px-4 sm:px-0"
-                id="demo"
-            >
-                <div className="absolute -inset-4 bg-gradient-to-tr from-emerald-500/20 to-cyan-500/20 blur-3xl opacity-50 group-hover:opacity-75 transition-opacity" />
-                <div className="glass p-2 sm:p-4 rounded-[2rem] border-border shadow-2xl relative overflow-hidden">
-                    <div className="aspect-[16/9] bg-card rounded-2xl flex items-center justify-center overflow-hidden border border-border">
-                        {/* Animated placeholder for chat app */}
-                        <div className="relative w-full h-full p-4 sm:p-12 flex space-x-6">
-                            <div className="w-1/4 h-full bg-secondary/80 rounded-2xl animate-pulse" />
-                            <div className="flex-1 space-y-6">
-                                <div className="h-14 bg-secondary/90 rounded-2xl w-3/4 animate-float" style={{ animationDelay: '1s' }} />
-                                <div className="h-14 bg-emerald-500/40 rounded-2xl w-1/2 self-end animate-float" style={{ animationDelay: '2s' }} />
-                                <div className="h-44 bg-secondary/60 rounded-2xl w-full" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </motion.div>
+            {/* Animated Grid & Orbs */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-30 dark:opacity-20 z-0 overflow-hidden">
+                <div className="absolute w-[800px] h-[800px] border-[1px] border-primary/20 rounded-full animate-spin-slow" style={{ animationDuration: '40s' }} />
+                <div className="absolute w-[600px] h-[600px] border-[1px] border-primary/20 rounded-full animate-spin-slow" style={{ animationDuration: '30s', animationDirection: 'reverse' }} />
+                <div className="absolute w-[400px] h-[400px] border-[1px] border-primary/30 rounded-full animate-spin-slow" style={{ animationDuration: '20s' }} />
+                
+                {/* Floating blur orbs */}
+                <motion.div 
+                    animate={{ y: [0, -50, 0], x: [0, 30, 0] }}
+                    transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute top-1/3 left-1/4 w-32 h-32 bg-emerald-500/20 rounded-full blur-3xl"
+                />
+                <motion.div 
+                    animate={{ y: [0, 50, 0], x: [0, -40, 0] }}
+                    transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute bottom-1/3 right-1/4 w-40 h-40 bg-cyan-500/20 rounded-full blur-3xl"
+                />
+            </div>
 
             {/* Background Decorations */}
-            <div className="absolute top-1/4 -left-20 w-96 h-96 bg-emerald-500/5 blur-[120px] rounded-full pointer-events-none" />
-            <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-cyan-500/5 blur-[120px] rounded-full pointer-events-none" />
+            <div className="absolute top-1/4 -left-20 w-96 h-96 bg-emerald-500/5 blur-[120px] rounded-full pointer-events-none z-0" />
+            <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-cyan-500/5 blur-[120px] rounded-full pointer-events-none z-0" />
         </section>
     );
 };
