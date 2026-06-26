@@ -145,6 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     await signOut(auth);
     Cookies.remove("chatly_session");
+    window.location.href = "/login";
   }, []);
 
   return (
