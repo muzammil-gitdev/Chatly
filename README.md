@@ -1,48 +1,75 @@
 # 💬 Chatly — Serverless Real-Time Messaging Platform
 
-**Chatly** is a high-performance, serverless real-time messaging application designed with a robust dual-layer permission system, hierarchical group structures, and reactive state management. Built explicitly using **Next.js 15 (App Router)** and **TypeScript**, the architecture leverages native edge environments and client-directed synchronization loops to provide an ultra-responsive, WhatsApp-like desktop and mobile ecosystem.
+**Chatly** is a high-performance, serverless real-time messaging application designed with a robust dual-layer permission system, hierarchical group structures, and reactive state management. Built explicitly using **Next.js (App Router)** and **TypeScript** as a **Full-Stack Application**, the architecture leverages native edge environments and client-directed synchronization loops to provide an ultra-responsive, WhatsApp-like desktop and mobile ecosystem.
 
 ---
 
-## 🛠️ Architectural Stack
+## ✨ Core Features
 
-*   **Frontend Framework:** Next.js (React 19, App Router architecture)
-*   **Language:** TypeScript (Strictly typed schemas and interfaces)
-*   **Styling Engine:** Tailwind CSS (Native dark & light mode tokens mapped to hardware preferences)
-*   **Database & Core Pipeline:** Firebase Firestore (Structured sub-collections & realtime reactive states)
-*   **Deployment Pipeline:** Vercel Edge Serverless Infrastructure
+### 🗣️ Individual & Group Chatting
+*   **One-on-One Messaging:** Enjoy seamless, real-time individual chats with read receipts and active typing indicators.
+*   **Hierarchical Group Streams:** Create and manage groups with granular authorization. Out-of-the-box structural authority maps out Group Creators/Admins from generalized members. Admins retain strict functional privileges to add, prune, or re-route user identities.
+*   **Sovereign Exits & System Logs:** Members can independently leave groups at any time. Native mutations (e.g., additions, deliberate exits) are compiled as isolated systemic events and rendered as unique mid-stream timeline logs.
+
+### 🔔 Push Notifications via Firebase FCM
+*   **Real-Time Alerts:** Stay connected with instant push notifications powered by Firebase Cloud Messaging (FCM).
+*   **Background Sync:** Receive reliable updates for new messages, group invites, and system events even when the app is minimized or running in the background.
+
+### 🎨 Chat UI Customization & Theming
+*   **Dynamic Theme Synchronization:** Zero-flicker Automated Theme Switcher Engine configured directly via hardware tokens and user preference.
+*   **Solar Light Profile:** Formulated for high-glare environments using strict slate tones (`#f8fafc`) and crisp, clean typography.
+*   **Deep Tech Dark Profile:** Mapped out on custom gray-to-black gradient palettes (`#0B0F19`) utilizing high-contrast accents to ensure minimal ocular fatigue.
+*   **Personalized Workspaces:** Tailor your chat interface to your liking for a truly custom messaging experience.
+
+### 👤 Profile & Contact Management
+*   **Profile Picture Setting:** Upload and manage your custom avatar seamlessly via Cloudinary integration.
+*   **Contact & Personal Information:** Maintain and update your display bio, status presets, and personal details while strict analytical core identifiers (usernames, system emails) remain protected.
+*   **Network Presence Indicators:** Continuous lifecycle tracking pipelines broadcasting automated granular *Last Seen* timestamp snapshots based on active network connection heartbeats.
+
+### 🔒 Privacy & Security (Zero-Trust Identity)
+*   **Inbound Connection Gateway:** To eliminate messaging overflow and unsolicited spamming, users cannot directly dump messages into an unknown recipient's workspace.
+*   **The Handshake Protocol:** The initial transmission triggers a connection request state. The recipient conditionally blocks input capabilities, replacing them with `[Accept]` or `[Decline]`.
+*   **OTP Verification Loops:** Dynamic security state dispatches a secure, server-side transactional One-Time Password (OTP) via email before granting main dashboard access.
 
 ---
 
-## 🚀 Key Engineering Features & Specifications
+## 💻 Comprehensive Tech Stack
 
-### 1. Inbound Connection Gateway (LinkedIn-Style Permission Routing)
-*   **Non-Intrusive DMs:** To eliminate messaging overflow and unsolicited spamming, users cannot directly dump messages into an unknown recipient's workspace.
-*   **The Handshake Protocol:** The initial transmission triggers an immutable connection request state. The recipient's core viewport conditionally blocks input capabilities, replacing them with binary action modules: `[Accept]` or `[Decline]`. 
-*   **Unlocking Pipelines:** Full conversational parameters and active synchronization pipelines remain entirely dead/disabled until an explicit recipient acceptance signature is logged.
+Built entirely as a modern **Full-Stack Application**, handling both the rich client interface and secure backend APIs within a single unified repository.
 
-### 2. Hierarchical Multi-Tenant Groups & Streams
-*   **Granular Authorization:** Out-of-the-box structural authority maps out Group Creators/Admins from generalized members. Admins retain strict functional privileges to add, prune, or re-route user identities within explicit channel IDs.
-*   **Sovereign Exits:** Individual participants are bound to modular autonomy, allowing them to independently terminate their node connection and leave groups at any lifecycle timestamp.
-*   **System Activity Logs:** Native mutations (e.g., membership additions, deliberate exits, or administrative evictions) are compiled as isolated systemic events (`type: "system"` metadata documents), rendered as unique mid-stream timeline logs instead of standard text-chat interfaces.
+### Framework & Core
+*   **Next.js 16:** Utilizing the latest App Router architecture for seamless routing, server-side rendering, and backend API handlers.
+*   **React 19:** Leveraging the latest React features and concurrent rendering capabilities.
+*   **TypeScript:** Enforcing strict type safety, custom schemas, and self-documenting code.
 
-### 3. Granular Message States & Real-Time Sync
+### Backend, Database & Cloud
+*   **Firebase Firestore:** Scalable NoSQL database with realtime listeners for instant chat synchronization.
+*   **Firebase Cloud Messaging (FCM) & Firebase Admin:** Robust infrastructure to deliver real-time push notifications across all platforms.
+*   **Service Workers:** Implemented for reliable background synchronization and push notification delivery even when the app is minimized or closed.
+*   **Cloudinary:** High-performance cloud storage and CDN optimization for profile pictures and media uploads.
+*   **Nodemailer:** Reliable SMTP integrations to send automated OTP emails for Zero-Trust user authentication.
+
+### Styling, UI & Animations
+*   **Tailwind CSS (v4):** Utility-first styling framework driving the application's responsive, dual-theme (Light/Dark) design system.
+*   **Framer Motion:** Powering fluid micro-animations, page transitions, and interactive chat interface elements.
+*   **Lucide React & Phosphor Icons:** Clean, consistent, and scalable SVG iconography for all UI components.
+*   **Sonner:** Highly customizable toast notifications for beautiful, unobtrusive user feedback.
+
+### Infrastructure & Operations
+*   **Vercel Analytics:** Native edge tracking to monitor user experience, performance, and visitor metrics.
+*   **Vercel Edge Network:** Serverless deployment pipeline ensuring low-latency asset delivery and API execution worldwide.
+
+
+---
+
+## 🚀 Granular Message States & Real-Time Sync
+
 *   **Dual-Tick Lifecycle Receipts:** Native document observers dynamically tracking and mutating data states across client instances:
     *   `[✓ Gray]` — Sent: Payload committed successfully onto the remote database clusters.
     *   `[✓✓ Gray]` — Delivered: Payload verified inside the specific platform architecture pipelines.
     *   `[✓✓ Green]` — Read: Reactive observer confirms the exact target user workspace view actively mounted the document into sight.
 *   **Contextual Messaging Retries:** Deeply nested reactive data schemas fully supporting inline replies, multi-tier threads, and nested quotes pointing back to parent string IDs.
 *   **Optimized Reactive Typing Subsystem:** Utilizing synchronized temporary presence maps in combination with aggressive debouncing algorithms to render live client typing signals (*"User is typing..."*) under minimal read-amplification overhead.
-
-### 4. Zero-Trust Identity Verification (OTP Pipeline)
-*   **Transactional Verification Loops:** The registration timeline prevents dirty reads and unverified identity caching inside the main database. 
-*   **Dynamic Security State:** Submitting credentials dispatches a secure, automated, server-side transactional One-Time Password (OTP) sequence directly over the targeted user's SMTP inbox. Access to the main dashboard layer is absolutely gated until the client verifies the transient code.
-*   **Volatile Vault Management:** Fully decoupled password recovery pipelines managing temporal tokens allowing self-service secure keys resetting.
-
-### 5. Adaptive User Workspaces & Sessions
-*   **Profile Control Boundaries:** Encapsulated update protocols granting direct manipulation over user presentation properties (Avatars, Display Bio, Status Presets) while strictly freezing analytical core identifiers (Immutable Usernames and Primary System Emails).
-*   **Network Presence Indicators:** Continuous lifecycle tracking pipelines broadcasting automated granular `Last Seen` timestamp snapshots based on active network connection heartbeats.
-*   **Session Clearance Protocol:** Fully automated secure cache erasure and immediate listener termination hooks triggering cleanly upon explicit user logout events.
 
 ---
 
@@ -51,6 +78,10 @@
 ```text
 src/
 ├── app/                           # Core App Router Structural Layouts
+│   ├── api/                       # Next.js Full-Stack Backend API Routes
+│   │   ├── auth/                  # Authentication & OTP Routes
+│   │   ├── notify/                # Firebase FCM Push Notification Handlers
+│   │   └── upload/                # Profile Picture Upload Handlers (Cloudinary)
 │   ├── layout.tsx                 # Global HTML & Body System Wrappers
 │   ├── chat/
 │   │   └── page.tsx               # Main Independent High-End Chat Dashboard Workspace
@@ -64,22 +95,12 @@ src/
 │
 ├── components/                    # Atomic Component Architecture
 │   ├── landing/                   # Modular Marketing UI Subsections
-│   │   ├── Navbar.tsx
-│   │   ├── Hero.tsx
-│   │   ├── Features.tsx
-│   │   └── Footer.tsx
+│   ├── chat/                      # Chat Interface & Messaging Components
+│   ├── auth/                      # Authentication & Security Components
 │   └── ui/                        # Reusable Control Nodes & Primitive System Units
-│       ├── ThemeToggle.tsx
-│       ├── Button.tsx
-│       └── Input.tsx
 │
+├── lib/                           # Core Utilities, Firebase Config, & Services
+├── context/                       # Global State Management & Providers
 └── styles/
     └── globals.css                # Base Tailwind layer with auto-detect hardware color tokens
-
-
-    🎨 Theme Synchronization
-Chatly implements a zero-flicker Automated Theme Switcher Engine configured directly via hardware tokens. By utilizing native media queries inside globals.css, the application automatically matches browser configuration modes seamlessly without layout shifts:
-
-Solar Light Profile: Formulated for high-glare environments using strict slate tones (#f8fafc) and crisp, clean typography structures.
-
-Deep Tech Dark Profile: Mapped out on custom gray-to-black gradient palettes (#0B0F19) utilizing high-contrast green accent variations to enhance readability and ensure minimal ocular fatigue during prolonged programming or operations workflows.
+```

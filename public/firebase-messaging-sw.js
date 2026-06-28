@@ -1,14 +1,14 @@
 importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
 
-firebase.initializeApp({
-  apiKey: "AIzaSyBSKwCB4N47NpQ-eXokAKvmUs30B4FzZoE",
-  authDomain: "chatly-ec08f.firebaseapp.com",
-  projectId: "chatly-ec08f",
-  storageBucket: "chatly-ec08f.firebasestorage.app",
-  messagingSenderId: "553080467362",
-  appId: "1:553080467362:web:db85793cd4059e2e610cfb"
-});
+const urlParams = new URLSearchParams(location.search);
+const configStr = urlParams.get('config');
+
+if (configStr) {
+  firebase.initializeApp(JSON.parse(configStr));
+} else {
+  console.warn("Firebase config not found in service worker URL");
+}
 
 const messaging = firebase.messaging();
 
