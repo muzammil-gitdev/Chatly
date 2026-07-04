@@ -16,12 +16,6 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Redirect authenticated users away from auth pages
-  const isAuthPage = AUTH_ROUTES.some((r) => pathname.startsWith(r));
-  if (isAuthPage && isAuthenticated) {
-    return NextResponse.redirect(new URL("/chat", request.url));
-  }
-
   return NextResponse.next();
 }
 

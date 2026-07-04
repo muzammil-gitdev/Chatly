@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "@/components/ui/ThemeProvider";
 import { AuthProvider } from "@/context/AuthContext";
+import { QueryProvider } from "@/components/ui/QueryProvider";
 import { Analytics } from "@vercel/analytics/next";
 import "@/styles/globals.css";
 import { Toaster } from "sonner";
@@ -25,14 +26,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Outfit:wght@100..900&display=swap" rel="stylesheet" />
       </head>
       <body className="font-inter bg-background text-foreground">
-        <ThemeProvider>
-          <AuthProvider>
-            {children}
-            <Toaster position="top-right" />
-          </AuthProvider>
-        </ThemeProvider>
+        <QueryProvider>
+          <ThemeProvider>
+            <AuthProvider>
+              {children}
+              <Toaster position="top-right" />
+            </AuthProvider>
+          </ThemeProvider>
+        </QueryProvider>
         <Analytics />
       </body>
     </html>
   );
 }
+

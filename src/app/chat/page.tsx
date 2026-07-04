@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import Sidebar from "@/components/chat/Sidebar";
 import ChatList, { type SelectedConversation } from "@/components/chat/ChatList";
@@ -9,6 +9,8 @@ import SettingsPanel from "@/components/chat/SettingsPanel";
 import NewChatModal from "@/components/chat/NewChatModal";
 import NewGroupModal from "@/components/chat/NewGroupModal";
 import { motion } from "framer-motion";
+import { ChatCircle, UsersThree, GearSix } from "@phosphor-icons/react";
+import { useChatsQuery, useGroupsQuery } from "@/lib/firebase-hooks";
 
 type View = "messages" | "groups" | "settings";
 
@@ -49,20 +51,115 @@ function EmptyState({ view }: { view: View }) {
   );
 }
 
+// ─── Mobile Bottom Tab Bar ────────────────────────────────────────────────────
+function MobileTabBar({
+  activeView,
+  onViewChange,
+}: {
+  activeView: View;
+  onViewChange: (v: View) => void;
+}) {
+  const tabs = [
+    { id: "messages" as const, icon: ChatCircle, label: "Chats" },
+    { id: "groups" as const, icon: UsersThree, label: "Groups" },
+    { id: "settings" as const, icon: GearSix, label: "Settings" },
+  ];
+
+  return (
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-[#090a0f] border-t border-zinc-200 dark:border-zinc-800/60 flex items-stretch h-16 safe-area-bottom">
+      {tabs.map((tab) => {
+        const Icon = tab.icon;
+        const isActive = activeView === tab.id;
+        return (
+          <button
+            key={tab.id}
+            onClick={() => onViewChange(tab.id)}
+            className={`flex-1 flex flex-col items-center justify-center gap-1 transition-colors ${
+              isActive
+                ? "text-emerald-500"
+                : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+            }`}
+          >
+            <Icon size={22} weight={isActive ? "fill" : "regular"} />
+            <span className="text-[10px] font-semibold tracking-wide">{tab.label}</span>
+            {isActive && (
+              <motion.div
+                layoutId="mobile-tab-indicator"
+                className="absolute bottom-0 w-8 h-0.5 bg-emerald-500 rounded-t-full"
+              />
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 const ChatPage = () => {
-  const { loading } = useAuth();
+  const { user, loading } = useAuth();
   const [activeView, setActiveView] = useState<View>("messages");
   const [selected, setSelected] = useState<SelectedConversation | null>(null);
   const [showNewChat, setShowNewChat] = useState(false);
   const [showNewGroup, setShowNewGroup] = useState(false);
 
+  // ─── Mobile panel tracking ─────────────────────────────────────────────────
+  // "list" = show chat/group list, "chat" = show chat window
+  const [mobilePanel, setMobilePanel] = useState<"list" | "chat">("list");
+
+  // When a conversation is selected on mobile → switch to chat panel
+  const handleSelect = (conv: SelectedConversation) => {
+    setSelected(conv);
+    setMobilePanel("chat");
+  };
+
+  // When back button pressed in ChatWindow on mobile
+  const handleBack = () => {
+    setMobilePanel("list");
+    setSelected(null);
+  };
+
+  // When view changes → go back to list panel
+  const handleViewChange = (view: View) => {
+    setActiveView(view);
+    setMobilePanel("list");
+    setSelected(null);
+  };
+
+  // ─── Live data from TanStack Query — keep selected in sync ─────────────────
+  const { data: dmChats = [] } = useChatsQuery(user?.uid);
+  const { data: groupChats = [] } = useGroupsQuery(user?.uid);
+
+  // When the underlying chat/group data changes, update selected so status is fresh
+  useEffect(() => {
+    if (!selected) return;
+    if (selected.type === "dm") {
+      const fresh = dmChats.find((c) => c.type === "dm" && c.chatId === selected.chatId);
+      if (fresh && JSON.stringify(fresh) !== JSON.stringify(selected)) {
+        setSelected(fresh);
+      }
+    } else {
+      const fresh = groupChats.find(
+        (g) => g.type === "group" && g.groupId === (selected as any).groupId
+      );
+      if (fresh && JSON.stringify(fresh) !== JSON.stringify(selected)) {
+        setSelected(fresh);
+      }
+    }
+  }, [dmChats, groupChats]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ─── Listen for global chat closure signals ──────────────────────────────
   React.useEffect(() => {
-    const handleClose = () => setSelected(null);
+    const handleClose = () => {
+      setSelected(null);
+      setMobilePanel("list");
+    };
     window.addEventListener("close-chat", handleClose);
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setSelected(null);
+      if (e.key === "Escape") {
+        setSelected(null);
+        setMobilePanel("list");
+      }
     };
     window.addEventListener("keydown", handleEsc);
     return () => {
@@ -73,36 +170,74 @@ const ChatPage = () => {
 
   if (loading) return <LoadingScreen />;
 
+  const showChatWindow = selected !== null;
+
   return (
     <div className="flex h-[100dvh] bg-white dark:bg-[#0b0c10] overflow-hidden text-zinc-900 dark:text-zinc-100 antialiased font-sans">
-      {/* Sidebar */}
-      <Sidebar activeView={activeView} onViewChange={setActiveView} />
 
-      {/* Settings panel takes full width */}
+      {/* ─── Desktop Sidebar (hidden on mobile) ─────────────────────────── */}
+      <div className="hidden md:flex">
+        <Sidebar activeView={activeView} onViewChange={handleViewChange} />
+      </div>
+
+      {/* ─── Settings panel (full width on all screens) ──────────────────── */}
       {activeView === "settings" ? (
         <SettingsPanel />
       ) : (
         <>
-          {/* Chat / Group List */}
-          <ChatList
-            selected={selected}
-            onSelect={setSelected}
-            view={activeView}
-            onNewChat={() => setShowNewChat(true)}
-            onNewGroup={() => setShowNewGroup(true)}
-          />
+          {/* ─── Chat / Group List ─────────────────────────────────────────
+              Desktop: always visible (w-80)
+              Mobile: visible only when mobilePanel === "list"
+          */}
+          <div
+            className={`
+              ${mobilePanel === "list" ? "flex" : "hidden"}
+              md:flex
+              w-full md:w-auto md:flex-shrink-0
+            `}
+          >
+            <ChatList
+              selected={selected}
+              onSelect={handleSelect}
+              view={activeView}
+              onNewChat={() => setShowNewChat(true)}
+              onNewGroup={() => setShowNewGroup(true)}
+            />
+          </div>
 
-          {/* Main chat area */}
-          {selected ? (
-            <ChatWindow key={selected.type === "dm" ? selected.chatId : selected.groupId} conversation={selected} />
-          ) : (
-            <EmptyState view={activeView} />
-          )}
+          {/* ─── Main chat area ────────────────────────────────────────────
+              Desktop: always visible (flex-1)
+              Mobile: visible only when mobilePanel === "chat"
+          */}
+          <div
+            className={`
+              ${mobilePanel === "chat" ? "flex" : "hidden"}
+              md:flex
+              flex-1 min-w-0
+            `}
+          >
+            {showChatWindow ? (
+              <ChatWindow
+                key={selected.type === "dm" ? selected.chatId : (selected as any).groupId}
+                conversation={selected}
+                onBack={handleBack}
+              />
+            ) : (
+              // Desktop empty state only
+              <EmptyState view={activeView} />
+            )}
+          </div>
         </>
       )}
 
-      {/* Modals */}
-      {showNewChat && <NewChatModal onClose={() => setShowNewChat(false)} onSelect={setSelected} />}
+      {/* ─── Mobile Bottom Tab Bar ───────────────────────────────────────── */}
+      {/* Only show when NOT in chat panel so it doesn't overlap the chat */}
+      {mobilePanel === "list" && (
+        <MobileTabBar activeView={activeView} onViewChange={handleViewChange} />
+      )}
+
+      {/* ─── Modals ─────────────────────────────────────────────────────── */}
+      {showNewChat && <NewChatModal onClose={() => setShowNewChat(false)} onSelect={handleSelect} />}
       {showNewGroup && <NewGroupModal onClose={() => setShowNewGroup(false)} />}
     </div>
   );

@@ -29,12 +29,18 @@ export async function requestFCMToken(userId: string) {
     
     // Check if we are in the browser
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-      const registration = await navigator.serviceWorker.register(swUrl);
+      // Register the SW
+      await navigator.serviceWorker.register(swUrl);
 
-      // Get token
+      // ✅ Wait for the SW to be fully active before calling getToken.
+      // navigator.serviceWorker.ready resolves only once an active SW controls the page,
+      // preventing the "no active Service Worker" AbortError.
+      const activeRegistration = await navigator.serviceWorker.ready;
+
+      // Get token using the guaranteed-active registration
       const token = await getToken(messaging, {
-        serviceWorkerRegistration: registration,
-        vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY, // Needs to be generated in Firebase Console
+        serviceWorkerRegistration: activeRegistration,
+        vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
       });
 
       if (token) {

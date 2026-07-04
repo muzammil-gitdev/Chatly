@@ -6,10 +6,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   PaperPlaneTilt,
   Smiley,
-  DotsThreeVertical,
   ShieldCheck,
-  Info
+  Info,
+  ArrowLeft,
 } from "@phosphor-icons/react";
+import { useLiveChatDoc } from "@/lib/firebase-hooks";
 import {
   collection,
   onSnapshot,
@@ -42,9 +43,11 @@ const spring = { type: "spring", stiffness: 300, damping: 25 } as const;
 
 interface ChatWindowProps {
   conversation: SelectedConversation;
+  /** Mobile: go back to chat list */
+  onBack?: () => void;
 }
 
-const ChatWindow = ({ conversation }: ChatWindowProps) => {
+const ChatWindow = ({ conversation, onBack }: ChatWindowProps) => {
   const { user, profile } = useAuth();
   const [messages, setMessages] = useState<Array<MessageDoc & { id: string }>>([]);
   const [input, setInput] = useState("");
@@ -60,15 +63,25 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
   const parentId = isDM ? conversation.chatId : conversation.groupId;
   const parentCollection: "chats" | "groups" = isDM ? "chats" : "groups";
 
+  // ─── Live document subscription via TanStack Query ────────────────────────
+  // This gives us real-time status updates so the accept/decline card disappears
+  // immediately after action — no page refresh needed.
+  const { data: liveDoc } = useLiveChatDoc(parentCollection, parentId);
+
   // ─── Real-time User Presence Hook ──────────────────────────────────────────
   const otherUid = isDM ? (conversation as any).participants?.find((p: string) => p !== user?.uid) : null;
   const [liveProfile, setLiveProfile] = useState<FirestoreUser | null>(null);
 
   useEffect(() => {
     if (!otherUid) return;
-    const unsub = onSnapshot(doc(db, COLLECTIONS.USERS, otherUid), (snap) => {
-      if (snap.exists()) setLiveProfile(snap.data() as FirestoreUser);
-    });
+    const unsub = onSnapshot(doc(db, COLLECTIONS.USERS, otherUid), 
+      (snap) => {
+        if (snap.exists()) setLiveProfile(snap.data() as FirestoreUser);
+      },
+      (err) => {
+        console.warn(`Could not listen to user ${otherUid} profile:`, err);
+      }
+    );
     return unsub;
   }, [otherUid]);
 
@@ -77,17 +90,25 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
   const theirBlockedUsers = liveProfile?.blockedUsers || [];
   const isBlocked = isDM && (myBlockedUsers.includes(otherUid!) || theirBlockedUsers.includes(user!.uid));
 
-  const isRejected = isDM && conversation.status === "rejected";
+  // ─── Use liveDoc status if available (real-time), else fall back to prop ──
+  const liveStatus = isDM
+    ? (liveDoc as any)?.status ?? conversation.status
+    : null;
+  const liveMembers = !isDM
+    ? (liveDoc as any)?.members ?? (conversation as any).members
+    : null;
 
-  // Pending logic
-  const groupMember = !isDM ? conversation.members?.find((m: any) => m.uid === user?.uid) : null;
+  const isRejected = isDM && liveStatus === "rejected";
+
+  // Pending logic — derived from live data
+  const groupMember = !isDM ? liveMembers?.find((m: any) => m.uid === user?.uid) : null;
   const isPending = isDM
-    ? conversation.status === "pending"
+    ? liveStatus === "pending"
     : groupMember?.status === "pending";
 
   const isRequester = isDM && conversation.requestedBy === user?.uid;
-  // Requesters can send messages during pending state; Recipients are locked until Accepted.
-  const isLocked = (isPending && !isRequester) || isRejected || isBlocked;
+  // Requesters can send exactly one message during pending state; Recipients are locked until Accepted.
+  const isLocked = (isPending && !isRequester) || (isPending && isRequester && messages.length >= 1) || isRejected || isBlocked;
 
   const displayName = isDM ? conversation.other.displayName : conversation.name;
   const photoURL = isDM ? conversation.other.photoURL : conversation.photoURL;
@@ -102,6 +123,9 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
     const q = query(msgRef, orderBy("timestamp", "asc"));
     const unsub: Unsubscribe = onSnapshot(q, (snap) => {
       setMessages(snap.docs.map((d) => ({ id: d.id, ...(d.data() as MessageDoc) })));
+      setLoading(false);
+    }, (error) => {
+      console.warn("Error in messages listener:", error);
       setLoading(false);
     });
 
@@ -137,6 +161,8 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
         const typingIds = Object.keys(data.typing).filter(uid => data.typing[uid] && uid !== user?.uid);
         setTypingUsers(typingIds);
       }
+    }, (error) => {
+      console.warn("Error in typing listener:", error);
     });
     return unsub;
   }, [parentId, parentCollection, user?.uid]);
@@ -202,7 +228,7 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
   const handleAccept = async () => {
     if (isDM) {
       const batch = writeBatch(db);
-      
+      // ✅ Status update triggers useLiveChatDoc → liveStatus updates → isPending becomes false → card disappears
       batch.update(doc(db, COLLECTIONS.CHATS, conversation.chatId), {
         status: "active",
       });
@@ -210,9 +236,6 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
       if (otherUid && user?.uid) {
         batch.update(doc(db, COLLECTIONS.USERS, user.uid), {
           acceptedContacts: arrayUnion(otherUid)
-        });
-        batch.update(doc(db, COLLECTIONS.USERS, otherUid), {
-          acceptedContacts: arrayUnion(user.uid)
         });
       }
 
@@ -393,11 +416,22 @@ const ChatWindow = ({ conversation }: ChatWindowProps) => {
   return (
     <div 
       onContextMenu={handleContextMenu}
-      className="flex-1 flex flex-col relative bg-white dark:bg-[#11131a] min-w-0"
+      className="flex-1 flex flex-col relative bg-white dark:bg-[#11131a] min-w-0 w-full"
     >
       {/* ─── Header ──────────────────────────────────────────────────────── */}
-      <header className="h-[60px] border-b border-zinc-200 dark:border-zinc-800/40 bg-white/90 dark:bg-[#11131a]/90 backdrop-blur-md flex items-center justify-between px-6 flex-shrink-0 z-10">
-        <div className="flex items-center gap-3">
+      <header className="h-[60px] border-b border-zinc-200 dark:border-zinc-800/40 bg-white/90 dark:bg-[#11131a]/90 backdrop-blur-md flex items-center justify-between px-4 md:px-6 flex-shrink-0 z-10">
+        <div className="flex items-center gap-2 md:gap-3">
+          {/* Mobile back button */}
+          {onBack && (
+            <motion.button
+              onClick={onBack}
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.92 }}
+              className="md:hidden p-1.5 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 rounded-lg transition-colors -ml-1"
+            >
+              <ArrowLeft size={20} weight="bold" />
+            </motion.button>
+          )}
           <div className="relative">
             <div className="relative w-9 h-9 rounded-xl overflow-hidden bg-zinc-800 border border-zinc-700/30">
               {photoURL ? (

@@ -1,25 +1,17 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { MagnifyingGlass, Plus, UsersThree } from "@phosphor-icons/react";
-import {
-  collection,
-  query,
-  where,
-  onSnapshot,
-  orderBy,
-  doc,
-  getDoc,
-  type Unsubscribe,
-} from "firebase/firestore";
+import { MagnifyingGlass, Plus, UsersThree, ArrowLeft } from "@phosphor-icons/react";
+import { onSnapshot, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { COLLECTIONS, type ChatDoc, type GroupDoc, type FirestoreUser } from "@/lib/firestore";
+import { COLLECTIONS, type FirestoreUser } from "@/lib/firestore";
 import { useAuth } from "@/context/AuthContext";
 import { ChatItemSkeleton } from "@/components/ui/Skeleton";
 import { formatDistanceToNow } from "date-fns";
 import clsx from "clsx";
+import { useChatsQuery, useGroupsQuery } from "@/lib/firebase-hooks";
 
 const spring = { type: "spring", stiffness: 300, damping: 25 } as const;
 
@@ -58,6 +50,8 @@ interface ChatListProps {
   view: "messages" | "groups";
   onNewChat: () => void;
   onNewGroup: () => void;
+  /** Mobile only: whether this panel is visible */
+  mobileVisible?: boolean;
 }
 
 type SubTab = "all" | "pending";
@@ -98,6 +92,8 @@ function usePresence(uid?: string) {
     if (!uid) return;
     const unsub = onSnapshot(doc(db, COLLECTIONS.USERS, uid), (snap) => {
       if (snap.exists()) setProfile(snap.data() as FirestoreUser);
+    }, (error) => {
+      console.warn(`Could not read profile for ${uid} in usePresence:`, error);
     });
     return unsub;
   }, [uid]);
@@ -220,92 +216,14 @@ function ChatListItem({
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-const ChatList = ({ selected, onSelect, view, onNewChat, onNewGroup }: ChatListProps) => {
+const ChatList = ({ selected, onSelect, view, onNewChat, onNewGroup, mobileVisible }: ChatListProps) => {
   const { user: currentUser } = useAuth();
   const [subTab, setSubTab] = useState<SubTab>("all");
   const [search, setSearch] = useState("");
-  const [dmChats, setDmChats] = useState<SelectedConversation[]>([]);
-  const [groups, setGroups] = useState<SelectedConversation[]>([]);
-  const [loadingDms, setLoadingDms] = useState(true);
-  const [loadingGroups, setLoadingGroups] = useState(true);
 
-  // ─── DM Chats listener ────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!currentUser) return;
-
-    const q = query(
-      collection(db, COLLECTIONS.CHATS),
-      where("participants", "array-contains", currentUser.uid),
-      orderBy("lastMessageAt", "desc")
-    );
-
-    const unsub: Unsubscribe = onSnapshot(q, async (snap) => {
-      const promises = snap.docs.map(async (docSnap) => {
-        const chat = docSnap.data() as ChatDoc;
-        const otherUid = chat.participants.find((p) => p !== currentUser.uid)!;
-
-        // Fetch the other user's profile once (initial load)
-        const userSnap = await getDoc(doc(db, COLLECTIONS.USERS, otherUid));
-        if (!userSnap.exists()) return null;
-        const other = userSnap.data() as FirestoreUser;
-
-        return {
-          type: "dm",
-          chatId: docSnap.id,
-          other,
-          participants: chat.participants,
-          status: chat.status,
-          requestedBy: chat.requestedBy,
-          unreadCount: (chat as any).unreadCount,
-          lastRead: (chat as any).lastRead,
-          lastMessage: chat.lastMessage,
-          lastMessageAt: chat.lastMessageAt,
-        } as SelectedConversation;
-      });
-
-      const results = (await Promise.all(promises)).filter(Boolean) as SelectedConversation[];
-      setDmChats(results);
-      setLoadingDms(false);
-    });
-
-    return unsub;
-  }, [currentUser]);
-
-  // ─── Groups listener ──────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!currentUser) return;
-
-    const q = query(
-      collection(db, COLLECTIONS.GROUPS),
-      where("members", "array-contains-any", [
-        { uid: currentUser.uid, status: "accepted" },
-        { uid: currentUser.uid, status: "pending" },
-      ])
-    );
-
-    const unsub: Unsubscribe = onSnapshot(q, (snap) => {
-      const results: SelectedConversation[] = snap.docs.map((d) => {
-        const g = d.data() as GroupDoc;
-        return {
-          type: "group",
-          groupId: d.id,
-          name: g.name,
-          photoURL: g.photoURL,
-          members: g.members,
-          adminId: g.adminId,
-          unreadCount: (g as any).unreadCount,
-          lastRead: (g as any).lastRead,
-          lastMessage: g.lastMessage,
-          lastMessageAt: g.lastMessageAt,
-          description: g.description,
-        };
-      });
-      setGroups(results);
-      setLoadingGroups(false);
-    });
-
-    return unsub;
-  }, [currentUser]);
+  // ─── TanStack Query powered real-time data ─────────────────────────────────
+  const { data: dmChats = [], isLoading: loadingDms } = useChatsQuery(currentUser?.uid);
+  const { data: groups = [], isLoading: loadingGroups } = useGroupsQuery(currentUser?.uid);
 
   // ─── Derived list ─────────────────────────────────────────────────────────
   const rawList = view === "messages" ? dmChats : groups;
@@ -319,7 +237,18 @@ const ChatList = ({ selected, onSelect, view, onNewChat, onNewGroup }: ChatListP
   });
 
   return (
-    <div className="w-80 flex-shrink-0 border-r border-zinc-200 dark:border-zinc-800/40 flex flex-col bg-zinc-50 dark:bg-[#12141c] h-full">
+    <div 
+      className={clsx(
+        // Desktop: always visible, fixed width
+        "md:w-80 md:flex-shrink-0 md:flex md:flex-col",
+        // Mobile: full width, conditionally shown based on mobileVisible
+        "flex flex-col",
+        mobileVisible === false ? "hidden md:flex" : "flex",
+        "border-r border-zinc-200 dark:border-zinc-800/40 bg-zinc-50 dark:bg-[#12141c] h-full",
+        // On mobile when visible, take full width
+        mobileVisible !== false ? "w-full md:w-80" : ""
+      )}
+    >
       {/* ─── Header ── */}
       <header className="h-[60px] border-b border-zinc-200 dark:border-zinc-800/40 px-5 flex items-center justify-between flex-shrink-0 bg-white/50 dark:bg-[#12141c]/50 backdrop-blur-md">
           <h2 className="text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
