@@ -113,10 +113,7 @@ export function useGroupsQuery(currentUserId: string | undefined): UseQueryResul
 
     const q = query(
       collection(db, COLLECTIONS.GROUPS),
-      where("members", "array-contains-any", [
-        { uid: currentUserId, status: "accepted" },
-        { uid: currentUserId, status: "pending" },
-      ])
+      where("memberIds", "array-contains", currentUserId)
     );
 
     const unsub = onSnapshot(q, (snap) => {

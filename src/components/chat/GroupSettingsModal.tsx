@@ -94,13 +94,15 @@ const GroupSettingsModal = ({ group, onClose }: GroupSettingsModalProps) => {
   const handleAddMember = async (uid: string) => {
     const groupId = group.id || (group as any).groupId;
     const newMembers = [...group.members, { uid, status: "pending" }];
-    await updateDoc(doc(db, COLLECTIONS.GROUPS, groupId), { members: newMembers });
+    const newMemberIds = [...(group.memberIds || group.members.map(m => m.uid)), uid];
+    await updateDoc(doc(db, COLLECTIONS.GROUPS, groupId), { members: newMembers, memberIds: newMemberIds });
   };
 
   const handleRemoveMember = async (uid: string) => {
     const groupId = group.id || (group as any).groupId;
     const newMembers = group.members.filter(m => m.uid !== uid);
-    await updateDoc(doc(db, COLLECTIONS.GROUPS, groupId), { members: newMembers });
+    const newMemberIds = (group.memberIds || group.members.map(m => m.uid)).filter((id: string) => id !== uid);
+    await updateDoc(doc(db, COLLECTIONS.GROUPS, groupId), { members: newMembers, memberIds: newMemberIds });
   };
 
   return (
@@ -246,17 +248,29 @@ const GroupSettingsModal = ({ group, onClose }: GroupSettingsModalProps) => {
                     />
                   </div>
 
-                  {search && (
-                    <div className="max-h-32 overflow-y-auto space-y-1">
-                      {filtered.map((u) => (
-                        <div key={u.uid} className="flex items-center justify-between p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800/40 transition-colors">
-                          <p className="text-sm text-zinc-800 dark:text-zinc-300">{u.displayName}</p>
-                          <button onClick={() => handleAddMember(u.uid)} className="text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 bg-emerald-500/10 px-2 py-1 rounded-lg">Add</button>
+                  <div className="max-h-40 overflow-y-auto space-y-1">
+                    {loading ? (
+                      <p className="text-xs text-zinc-500 p-2">Loading users...</p>
+                    ) : filtered.length === 0 ? (
+                      <p className="text-xs text-zinc-500 p-2">No users to add.</p>
+                    ) : (
+                      filtered.map((u) => (
+                        <div key={u.uid} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800/40 transition-colors">
+                          <div className="w-7 h-7 rounded-full overflow-hidden bg-zinc-200 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700/40 flex-shrink-0">
+                            {u.photoURL ? (
+                              <img src={u.photoURL} alt={u.displayName} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-semibold">
+                                {u.displayName[0]?.toUpperCase()}
+                              </div>
+                            )}
+                          </div>
+                          <p className="text-sm text-zinc-800 dark:text-zinc-300 flex-1 truncate">{u.displayName}</p>
+                          <button onClick={() => handleAddMember(u.uid)} className="text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 bg-emerald-500/10 px-2.5 py-1 rounded-lg flex-shrink-0 transition-colors">Add</button>
                         </div>
-                      ))}
-                      {filtered.length === 0 && <p className="text-xs text-zinc-500 p-2">No users found.</p>}
-                    </div>
-                  )}
+                      ))
+                    )}
+                  </div>
                 </>
               )}
             </div>

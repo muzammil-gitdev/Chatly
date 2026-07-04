@@ -67,12 +67,15 @@ const NewGroupModal = ({ onClose }: NewGroupModalProps) => {
         ...selected.map((uid) => ({ uid, status: "pending" })),
       ] as GroupDoc["members"];
 
+      const memberIds = [user.uid, ...selected];
+
       await addDoc(collection(db, COLLECTIONS.GROUPS), {
         name: groupName.trim(),
         description: description.trim(),
         photoURL: null,
         adminId: user.uid,
         members,
+        memberIds,
         createdAt: serverTimestamp(),
         lastMessageAt: serverTimestamp(),
         lastMessage: "",

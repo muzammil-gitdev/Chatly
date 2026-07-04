@@ -271,8 +271,10 @@ const ChatWindow = ({ conversation, onBack }: ChatWindowProps) => {
     } else {
       // Remove self from group
       const updatedMembers = (conversation as any).members.filter((m: any) => m.uid !== user?.uid);
+      const updatedMemberIds = (conversation as any).members.filter((m: any) => m.uid !== user?.uid).map((m: any) => m.uid);
       await updateDoc(doc(db, COLLECTIONS.GROUPS, conversation.groupId), {
         members: updatedMembers,
+        memberIds: updatedMemberIds,
       });
     }
   };

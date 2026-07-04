@@ -57,6 +57,7 @@ export interface GroupDoc {
   photoURL: string | null;
   adminId: string;
   members: Array<{ uid: string; status: "pending" | "accepted" }>;
+  memberIds: string[];
   createdAt: unknown;
   lastMessage?: string;
   lastMessageAt?: unknown;

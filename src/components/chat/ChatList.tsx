@@ -221,6 +221,12 @@ const ChatList = ({ selected, onSelect, view, onNewChat, onNewGroup, mobileVisib
   const [subTab, setSubTab] = useState<SubTab>("all");
   const [search, setSearch] = useState("");
 
+  // Reset subTab and search when switching views
+  useEffect(() => {
+    setSubTab("all");
+    setSearch("");
+  }, [view]);
+
   // ─── TanStack Query powered real-time data ─────────────────────────────────
   const { data: dmChats = [], isLoading: loadingDms } = useChatsQuery(currentUser?.uid);
   const { data: groups = [], isLoading: loadingGroups } = useGroupsQuery(currentUser?.uid);
@@ -232,7 +238,8 @@ const ChatList = ({ selected, onSelect, view, onNewChat, onNewGroup, mobileVisib
     const label = conv.type === "dm" ? conv.other.displayName : conv.name;
     const matchesSearch = label.toLowerCase().includes(search.toLowerCase());
     if (!matchesSearch) return false;
-    if (subTab === "pending" && conv.type === "dm" && conv.status !== "pending") return false;
+    // Only apply pending filter for DM view
+    if (view === "messages" && subTab === "pending" && conv.type === "dm" && conv.status !== "pending") return false;
     return true;
   });
 
@@ -277,7 +284,8 @@ const ChatList = ({ selected, onSelect, view, onNewChat, onNewGroup, mobileVisib
             className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/60 focus:border-emerald-500/50 rounded-xl text-sm text-zinc-900 dark:text-zinc-200 placeholder:text-zinc-500 outline-none transition-all shadow-sm dark:shadow-none"
           />
         </div>
-        <SubTabs active={subTab} onChange={setSubTab} />
+        {/* Only show pending/all tabs for DMs */}
+        {view === "messages" && <SubTabs active={subTab} onChange={setSubTab} />}
       </div>
 
       {/* Conversation List */}
