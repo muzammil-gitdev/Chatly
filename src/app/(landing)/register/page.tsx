@@ -157,12 +157,7 @@ const RegisterPage = () => {
       >
         {/* Brand */}
         <div className="text-center mb-10">
-          <Link href="/" className="inline-flex items-center space-x-2 mb-8 group">
-            <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
-              <span className="text-white font-semibold text-xl">C</span>
-            </div>
-            <span className="text-2xl font-semibold tracking-tight font-outfit">Chatly</span>
-          </Link>
+
           <h1 className="text-3xl font-semibold tracking-tight mb-2">Create Account</h1>
           <p className="text-muted-foreground text-sm">Join the zero-trust messaging ecosystem.</p>
         </div>

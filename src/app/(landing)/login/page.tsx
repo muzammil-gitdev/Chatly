@@ -60,20 +60,35 @@ const LoginPage = () => {
         transition={spring}
         className="w-full max-w-md"
       >
-        {/* Brand */}
-        <div className="text-center mb-10">
-          <Link href="/" className="inline-flex items-center space-x-2 mb-8">
-            <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
-              <span className="text-white font-semibold text-xl">C</span>
-            </div>
-            <span className="text-2xl font-semibold tracking-tight font-outfit">Chatly</span>
-          </Link>
-          <h1 className="text-3xl font-semibold tracking-tight mb-2">Welcome back</h1>
-          <p className="text-muted-foreground text-sm">Sign in to your secure workspace.</p>
-        </div>
+
 
         {/* Card */}
         <div className="bg-[#11131a]/80 backdrop-blur-xl border border-zinc-800/40 p-8 rounded-3xl shadow-2xl">
+          {/* Guest Accounts */}
+          <div className="mb-6 p-4 rounded-xl bg-zinc-800/30 border border-zinc-700/50">
+            <p className="text-xs text-zinc-400 mb-3 uppercase tracking-wider font-semibold text-center">Guest Accounts</p>
+            <div className="flex flex-col gap-2">
+              {[
+                { email: 'guest_user@gmail.com', pass: '12345678' },
+                { email: 'guest_user1@gmail.com', pass: '12345678' },
+                { email: 'guest_user2@gmail.com', pass: '12345678' },
+              ].map((guest, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setForm({ email: guest.email, password: guest.pass })}
+                  className="flex items-center justify-between px-3 py-2 rounded-lg bg-zinc-900/50 border border-zinc-700/30 hover:border-emerald-500/30 hover:bg-zinc-800/50 transition-all text-left group"
+                >
+                  <div className="flex flex-col">
+                    <span className="text-sm text-zinc-300 group-hover:text-emerald-400 transition-colors">{guest.email}</span>
+                    <span className="text-[10px] text-zinc-500 font-mono">PWD: {guest.pass}</span>
+                  </div>
+                  <span className="text-xs text-zinc-500 group-hover:text-emerald-400/70 transition-colors whitespace-nowrap ml-4">Click to use</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <form className="space-y-5" onSubmit={handleSubmit}>
             <AnimatePresence>
               {error && <Alert key="err" message={error} />}
