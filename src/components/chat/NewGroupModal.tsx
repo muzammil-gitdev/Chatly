@@ -78,8 +78,9 @@ const NewGroupModal = ({ onClose }: NewGroupModalProps) => {
         lastMessage: "",
       } satisfies Omit<GroupDoc, "id">);
       onClose();
-    } catch {
-      setError("Failed to create group. Please try again.");
+    } catch (err: any) {
+      console.error("Group creation error:", err);
+      setError(`Failed to create group: ${err.message}`);
     } finally {
       setCreating(false);
     }
