@@ -16,6 +16,13 @@ export interface UploadResult {
 
 const CLOUDINARY_APP_FOLDER = "Chatly";
 
+export function getAvatarPublicId(
+  id: string,
+  type: "profile" | "group" = "profile"
+): string {
+  return `${CLOUDINARY_APP_FOLDER}/${type}s/${id}`;
+}
+
 // ─── Upload avatar (always overwrites the same public_id) ────────────────────
 export async function uploadAvatar(
   fileBuffer: Buffer,
@@ -48,4 +55,8 @@ export async function uploadAvatar(
 // ─── Delete avatar ────────────────────────────────────────────────────────────
 export async function deleteAvatar(publicId: string): Promise<void> {
   await cloudinary.uploader.destroy(publicId, { resource_type: "image" });
+}
+
+export async function deleteAvatars(publicIds: string[]): Promise<void> {
+  await Promise.all(publicIds.map((publicId) => deleteAvatar(publicId)));
 }

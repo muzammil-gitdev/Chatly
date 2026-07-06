@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { MagnifyingGlass, X, Camera } from "@phosphor-icons/react";
+import { MagnifyingGlass, X, Camera, Trash } from "@phosphor-icons/react";
 import {
   collection,
   getDocs,
@@ -34,6 +34,7 @@ const GroupSettingsModal = ({ group, onClose }: GroupSettingsModalProps) => {
   const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [uploadLoading, setUploadLoading] = useState(false);
+  const [removeLoading, setRemoveLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const groupId = group.id ?? group.groupId;
 
@@ -77,6 +78,33 @@ const GroupSettingsModal = ({ group, onClose }: GroupSettingsModalProps) => {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+    }
+  };
+
+  const handleAvatarRemove = async () => {
+    if (!user || !isAdmin || !groupId || !photoURL) return;
+
+    const confirmed = window.confirm("Remove this group photo? This will delete it from Cloudinary and clear it from the group.");
+    if (!confirmed) return;
+
+    setRemoveLoading(true);
+    try {
+      const publicIds = group.photoPublicId
+        ? [group.photoPublicId]
+        : [`Chatly/groups/${groupId}`, `chatly/groups/${groupId}`];
+
+      const res = await fetch("/api/upload/delete", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ publicIds }),
+      });
+
+      if (!res.ok) throw new Error("Remove failed");
+
+      await updateDoc(doc(db, COLLECTIONS.GROUPS, groupId), { photoURL: null, photoPublicId: null });
+      setPhotoURL(null);
+    } finally {
+      setRemoveLoading(false);
     }
   };
 
@@ -152,13 +180,26 @@ const GroupSettingsModal = ({ group, onClose }: GroupSettingsModalProps) => {
                       onClick={() => fileInputRef.current?.click()}
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.92 }}
-                      disabled={uploadLoading}
+                      disabled={uploadLoading || removeLoading}
                       transition={spring}
                       aria-label="Change group photo"
                       className="absolute -bottom-1.5 -right-1.5 p-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-white shadow-lg disabled:opacity-60 transition-colors"
                     >
                       <Camera size={14} weight="fill" />
                     </motion.button>
+                    {photoURL && (
+                      <motion.button
+                        onClick={handleAvatarRemove}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.92 }}
+                        disabled={uploadLoading || removeLoading}
+                        transition={spring}
+                        aria-label="Remove group photo"
+                        className="absolute -bottom-1.5 -left-1.5 p-1.5 bg-red-600 hover:bg-red-500 rounded-lg text-white shadow-lg disabled:opacity-60 transition-colors"
+                      >
+                        <Trash size={14} weight="fill" />
+                      </motion.button>
+                    )}
                     <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
                   </>
                 )}
@@ -173,6 +214,7 @@ const GroupSettingsModal = ({ group, onClose }: GroupSettingsModalProps) => {
                   className="w-full bg-transparent border-b border-zinc-300 dark:border-zinc-700 focus:border-emerald-500 outline-none text-sm font-semibold text-zinc-900 dark:text-zinc-200 py-1 disabled:border-transparent"
                 />
                 {uploadLoading && <p className="text-xs text-emerald-400 mt-1">Uploading...</p>}
+                {removeLoading && <p className="text-xs text-red-400 mt-1">Removing...</p>}
               </div>
             </div>
 

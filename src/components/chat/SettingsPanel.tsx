@@ -7,15 +7,15 @@ import {
   User,
   Lock,
   Palette,
-  Bell,
   Camera,
+  Trash,
   MapPin,
   Phone,
   EnvelopeSimple,
   FloppyDisk,
 } from "@phosphor-icons/react";
 import { useAuth } from "@/context/AuthContext";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { COLLECTIONS, updateUser } from "@/lib/firestore";
 import { useTheme } from "@/components/ui/ThemeProvider";
@@ -86,6 +86,7 @@ const SettingsPanel = () => {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [uploadLoading, setUploadLoading] = useState(false);
+  const [removeLoading, setRemoveLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const set = (key: keyof typeof form) => (val: string) =>
@@ -119,7 +120,7 @@ const SettingsPanel = () => {
   const handleThemeChange = async (newTheme: "dark" | "light") => {
     if (!user) return;
     setTheme(newTheme);
-    await updateUser(user.uid, { "settings.theme": newTheme } as any);
+    await updateDoc(doc(db, COLLECTIONS.USERS, user.uid), { "settings.theme": newTheme });
   };
 
 
@@ -159,6 +160,32 @@ const SettingsPanel = () => {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+    }
+  };
+
+  const handleAvatarRemove = async () => {
+    if (!user || !profile?.photoURL) return;
+
+    const confirmed = window.confirm("Remove your profile image? This will delete it from Cloudinary and clear it from your profile.");
+    if (!confirmed) return;
+
+    setRemoveLoading(true);
+    try {
+      const publicIds = profile.photoPublicId
+        ? [profile.photoPublicId]
+        : [`Chatly/profiles/${user.uid}`, `chatly/profiles/${user.uid}`];
+
+      const res = await fetch("/api/upload/delete", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ publicIds }),
+      });
+
+      if (!res.ok) throw new Error("Remove failed");
+
+      await updateUser(user.uid, { photoURL: null, photoPublicId: null });
+    } finally {
+      setRemoveLoading(false);
     }
   };
 
@@ -223,18 +250,33 @@ const SettingsPanel = () => {
                       onClick={() => fileInputRef.current?.click()}
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.92 }}
-                      disabled={uploadLoading}
+                      disabled={uploadLoading || removeLoading}
                       transition={spring}
+                      aria-label="Change profile image"
                       className="absolute -bottom-1.5 -right-1.5 p-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-white shadow-lg disabled:opacity-60 transition-colors"
                     >
                       <Camera size={14} weight="fill" />
                     </motion.button>
+                    {profile?.photoURL && (
+                      <motion.button
+                        onClick={handleAvatarRemove}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.92 }}
+                        disabled={uploadLoading || removeLoading}
+                        transition={spring}
+                        aria-label="Remove profile image"
+                        className="absolute -bottom-1.5 -left-1.5 p-1.5 bg-red-600 hover:bg-red-500 rounded-lg text-white shadow-lg disabled:opacity-60 transition-colors"
+                      >
+                        <Trash size={14} weight="fill" />
+                      </motion.button>
+                    )}
                     <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-zinc-200">{profile?.displayName}</p>
                     <p className="text-xs text-zinc-500 mt-0.5">{profile?.email}</p>
                     {uploadLoading && <p className="text-xs text-emerald-400 mt-1">Uploading...</p>}
+                    {removeLoading && <p className="text-xs text-red-400 mt-1">Removing...</p>}
                   </div>
                 </div>
 
