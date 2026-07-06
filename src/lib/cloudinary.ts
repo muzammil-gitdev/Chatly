@@ -14,6 +14,8 @@ export interface UploadResult {
   publicId: string;
 }
 
+const CLOUDINARY_APP_FOLDER = "Chatly";
+
 // ─── Upload avatar (always overwrites the same public_id) ────────────────────
 export async function uploadAvatar(
   fileBuffer: Buffer,
@@ -21,12 +23,12 @@ export async function uploadAvatar(
   type: "profile" | "group" = "profile"
 ): Promise<UploadResult> {
   return new Promise((resolve, reject) => {
-    const publicId = `chatly/${type}s/${id}`;
+    const uploadFolder = `${CLOUDINARY_APP_FOLDER}/${type}s`;
 
     const uploadStream = cloudinary.uploader.upload_stream(
       {
-        folder: undefined, // folder is encoded in publicId
-        public_id: publicId,
+        folder: uploadFolder,
+        public_id: id,
         overwrite: true,
         invalidate: true, // purge CDN cache on overwrite
         transformation: [{ width: 256, height: 256, crop: "fill", gravity: "face" }],
