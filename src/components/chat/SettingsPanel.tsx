@@ -152,10 +152,13 @@ const SettingsPanel = () => {
       fd.append("type", "profile");
       const res = await fetch("/api/upload", { method: "POST", body: fd });
       if (!res.ok) throw new Error("Upload failed");
-      const { url } = await res.json();
-      await updateUser(user.uid, { photoURL: url });
+      const { url, publicId } = await res.json();
+      await updateUser(user.uid, { photoURL: url, photoPublicId: publicId });
     } finally {
       setUploadLoading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 

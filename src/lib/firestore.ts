@@ -29,6 +29,7 @@ export interface FirestoreUser {
   displayName: string;
   email: string;
   photoURL: string | null;
+  photoPublicId?: string | null;
   bio: string;
   phone: string;
   location: string;

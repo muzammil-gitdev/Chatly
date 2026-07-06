@@ -16,8 +16,9 @@ export async function POST(req: NextRequest) {
     const result = await uploadAvatar(buffer, id, type);
 
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Upload API Error:", error);
-    return NextResponse.json({ error: error.message || "Upload failed" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Upload failed";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

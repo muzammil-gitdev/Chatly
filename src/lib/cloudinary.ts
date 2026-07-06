@@ -30,6 +30,7 @@ export async function uploadAvatar(
         folder: uploadFolder,
         public_id: id,
         overwrite: true,
+        unique_filename: false,
         invalidate: true, // purge CDN cache on overwrite
         transformation: [{ width: 256, height: 256, crop: "fill", gravity: "face" }],
         resource_type: "image",

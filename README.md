@@ -22,7 +22,8 @@
 *   **Personalized Workspaces:** Tailor your chat interface to your liking for a truly custom messaging experience.
 
 ### 👤 Profile & Contact Management
-*   **Profile Picture Setting:** Upload and manage your custom avatar seamlessly via Cloudinary integration.
+*   **Profile Picture Setting:** Upload and manage your custom avatar through Cloudinary with deterministic per-user asset replacement.
+*   **Clean Avatar Lifecycle:** Each user keeps one canonical Cloudinary profile image at `Chatly/profiles/{uid}`. Re-uploading a profile picture overwrites the same asset instead of creating a new random file every time.
 *   **Contact & Personal Information:** Maintain and update your display bio, status presets, and personal details while strict analytical core identifiers (usernames, system emails) remain protected.
 *   **Network Presence Indicators:** Continuous lifecycle tracking pipelines broadcasting automated granular *Last Seen* timestamp snapshots based on active network connection heartbeats.
 
@@ -46,7 +47,7 @@ Built entirely as a modern **Full-Stack Application**, handling both the rich cl
 *   **Firebase Firestore:** Scalable NoSQL database with realtime listeners for instant chat synchronization.
 *   **Firebase Cloud Messaging (FCM) & Firebase Admin:** Robust infrastructure to deliver real-time push notifications across all platforms.
 *   **Service Workers:** Implemented for reliable background synchronization and push notification delivery even when the app is minimized or closed.
-*   **Cloudinary:** High-performance cloud storage and CDN optimization for profile pictures and media uploads.
+*   **Cloudinary:** High-performance cloud storage and CDN optimization for profile pictures and media uploads, organized under a dedicated `Chatly` folder.
 *   **Nodemailer:** Reliable SMTP integrations to send automated OTP emails for Zero-Trust user authentication.
 
 ### Styling, UI & Animations
@@ -70,6 +71,32 @@ Built entirely as a modern **Full-Stack Application**, handling both the rich cl
     *   `[✓✓ Green]` — Read: Reactive observer confirms the exact target user workspace view actively mounted the document into sight.
 *   **Contextual Messaging Retries:** Deeply nested reactive data schemas fully supporting inline replies, multi-tier threads, and nested quotes pointing back to parent string IDs.
 *   **Optimized Reactive Typing Subsystem:** Utilizing synchronized temporary presence maps in combination with aggressive debouncing algorithms to render live client typing signals (*"User is typing..."*) under minimal read-amplification overhead.
+
+---
+
+## Cloudinary Asset Lifecycle
+
+Chatly uses a controlled Cloudinary upload strategy for profile and group images instead of allowing every upload to create a random, permanent asset.
+
+### Dedicated Folder Structure
+
+```text
+Chatly/
+├── profiles/
+│   └── {user.uid}
+└── groups/
+    └── {groupId}
+```
+
+### Why This Matters
+
+*   **One user, one active profile image:** A user profile image is uploaded with the stable public ID `Chatly/profiles/{uid}`.
+*   **Replacement instead of clutter:** When the same user uploads a new profile image, Cloudinary overwrites the existing asset instead of creating a heap of unused files.
+*   **Cleaner storage:** The Cloudinary media library stays organized by application domain (`Chatly`) and asset type (`profiles`, `groups`).
+*   **Predictable references:** Firestore stores the active `photoURL` and `photoPublicId`, so the app always points to the current image for that user.
+*   **CDN refresh support:** Uploads use Cloudinary invalidation so replaced images can refresh cleanly across cached delivery URLs.
+
+This follows the same general asset-lifecycle pattern used in large-scale product engineering, including companies in the Netflix/Meta/Google class: deterministic object keys for user-owned assets, overwrite mutable resources in place, and avoid unbounded storage growth from repeated profile updates. The exact internal implementation differs by company, but the principle is the same: stable IDs, predictable ownership, and storage hygiene.
 
 ---
 
