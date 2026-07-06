@@ -70,6 +70,10 @@ export interface MessageDoc {
   senderId: string;
   timestamp: unknown;
   type: "text" | "system";
+  deletedFor?: string[];
+  forwarded?: boolean;
+  edited?: boolean;
+  editedAt?: unknown;
 }
 
 // ─── User helpers ─────────────────────────────────────────────────────────────

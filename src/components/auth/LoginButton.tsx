@@ -9,14 +9,13 @@ export default function LoginButton() {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
-      console.log("Logged In Successfully!", user.displayName, user.email);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Authentication failed";
       console.error("Authentication Error:", message);
     }
   };
 
-    return (
+  return (
     <button
       onClick={handleGoogleSignIn}
       className="flex items-center justify-center gap-3 w-full px-5 py-3.5 bg-zinc-900 border border-zinc-800/60 text-zinc-200 font-semibold rounded-xl shadow-lg hover:bg-zinc-800/80 hover:border-zinc-700/60 transition-all duration-300 group"
@@ -41,5 +40,5 @@ export default function LoginButton() {
       </svg>
       Continue with Google
     </button>
-    );
+  );
 }

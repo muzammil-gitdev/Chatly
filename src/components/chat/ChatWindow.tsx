@@ -9,8 +9,12 @@ import {
   ShieldCheck,
   Info,
   ArrowLeft,
+  Trash,
+  X,
+  ArrowBendUpRight,
+  PencilSimple,
 } from "@phosphor-icons/react";
-import { useLiveChatDoc } from "@/lib/firebase-hooks";
+import { useChatsQuery, useGroupsQuery, useLiveChatDoc } from "@/lib/firebase-hooks";
 import {
   collection,
   onSnapshot,
@@ -20,7 +24,6 @@ import {
   doc,
   getDoc,
   updateDoc,
-  deleteDoc,
   addDoc,
   increment,
   writeBatch,
@@ -40,6 +43,8 @@ import GroupSettingsModal from "./GroupSettingsModal";
 import UserProfileModal from "./UserProfileModal";
 
 const spring = { type: "spring", stiffness: 300, damping: 25 } as const;
+const EDIT_WINDOW_MS = 3 * 60 * 1000;
+const QUICK_EMOJIS = ["😀", "😂", "😍", "😊", "🔥", "👍", "❤️", "🙏", "🎉", "😎", "🥲", "😅", "💯", "✅", "🤝", "✨"];
 
 interface ChatWindowProps {
   conversation: SelectedConversation;
@@ -56,12 +61,36 @@ const ChatWindow = ({ conversation, onBack }: ChatWindowProps) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showGroupSettings, setShowGroupSettings] = useState(false);
   const [showUserInfo, setShowUserInfo] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
+  const [showForwardModal, setShowForwardModal] = useState(false);
+  const [forwarding, setForwarding] = useState(false);
+  const [editingMessage, setEditingMessage] = useState<(MessageDoc & { id: string }) | null>(null);
+  const [editText, setEditText] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  const { data: forwardChats = [] } = useChatsQuery(user?.uid);
+  const { data: forwardGroups = [] } = useGroupsQuery(user?.uid);
 
   const isDM = conversation.type === "dm";
   const parentId = isDM ? conversation.chatId : conversation.groupId;
   const parentCollection: "chats" | "groups" = isDM ? "chats" : "groups";
+  const visibleMessages = messages.filter((msg) => !user?.uid || !msg.deletedFor?.includes(user.uid));
+  const selectedMessages = visibleMessages.filter((msg) => selectedMessageIds.includes(msg.id) && msg.type === "text");
+  const selectionMode = selectedMessageIds.length > 0;
+  const canDeleteSelectedForEveryone =
+    selectedMessages.length > 0 && selectedMessages.every((msg) => msg.senderId === user?.uid);
+  const selectedEditableMessage = selectedMessages.length === 1 ? selectedMessages[0] : null;
+  const selectedEditableDate =
+    selectedEditableMessage?.timestamp && (selectedEditableMessage.timestamp as { toDate?: () => Date }).toDate
+      ? (selectedEditableMessage.timestamp as { toDate: () => Date }).toDate()
+      : null;
+  const canEditSelectedMessage =
+    !!selectedEditableMessage &&
+    selectedEditableMessage.senderId === user?.uid &&
+    !!selectedEditableDate &&
+    Date.now() - selectedEditableDate.getTime() <= EDIT_WINDOW_MS;
 
   // ─── Live document subscription via TanStack Query ────────────────────────
   // This gives us real-time status updates so the accept/decline card disappears
@@ -108,10 +137,15 @@ const ChatWindow = ({ conversation, onBack }: ChatWindowProps) => {
 
   const isRequester = isDM && conversation.requestedBy === user?.uid;
   // Requesters can send exactly one message during pending state; Recipients are locked until Accepted.
-  const isLocked = (isPending && !isRequester) || (isPending && isRequester && messages.length >= 1) || isRejected || isBlocked;
+  const isLocked = (isPending && !isRequester) || (isPending && isRequester && visibleMessages.length >= 1) || isRejected || isBlocked;
 
   const displayName = isDM ? conversation.other.displayName : conversation.name;
   const photoURL = isDM ? conversation.other.photoURL : conversation.photoURL;
+
+  useEffect(() => {
+    setSelectedMessageIds([]);
+    setShowForwardModal(false);
+  }, [parentId]);
 
   // ─── Messages listener ────────────────────────────────────────────────────
   useEffect(() => {
@@ -170,7 +204,7 @@ const ChatWindow = ({ conversation, onBack }: ChatWindowProps) => {
   // Auto-scroll to bottom
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [visibleMessages]);
 
   // ─── Mark as read ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -280,23 +314,20 @@ const ChatWindow = ({ conversation, onBack }: ChatWindowProps) => {
   };
 
   const CONFIRM_CLEAR = async () => {
-    if (!parentId) return;
+    if (!parentId || !user) return;
     setSending(true);
     try {
       const batch = writeBatch(db);
-      
-      // 1. Delete all messages
+
       const msgSnap = await getDocs(collection(db, parentCollection, parentId, "messages"));
-      msgSnap.forEach((d) => batch.delete(d.ref));
-      
-      // 2. Clear last message to reflect empty chat
-      batch.update(doc(db, parentCollection, parentId), {
-        lastMessage: "",
-        lastMessageAt: serverTimestamp(),
+      msgSnap.forEach((d) => {
+        const msg = d.data() as MessageDoc;
+        if (!msg.deletedFor?.includes(user.uid)) {
+          batch.update(d.ref, { deletedFor: arrayUnion(user.uid) });
+        }
       });
-      
+
       await batch.commit();
-      // DO NOT close chat
     } finally {
       setSending(false);
       setShowDeleteConfirm(false);
@@ -330,11 +361,11 @@ const ChatWindow = ({ conversation, onBack }: ChatWindowProps) => {
   }, []);
 
   // ─── Send message ─────────────────────────────────────────────────────────
-  const handleSend = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const sendMessage = async () => {
     if (!input.trim() || !user || isLocked) return;
     const text = input.trim();
     setInput("");
+    setShowEmojiPicker(false);
     setSending(true);
     try {
       const msgRef = messagesRef(parentCollection, parentId);
@@ -404,7 +435,7 @@ const ChatWindow = ({ conversation, onBack }: ChatWindowProps) => {
       }
 
       // If it's the first message in a pending DM, notify the recipient via email route
-      if (isDM && isPending && messages.length === 0) {
+      if (isDM && isPending && visibleMessages.length === 0) {
         fetch("/api/notify/request", {
           method: "POST",
           body: JSON.stringify({ toEmail: conversation.other.email, fromName: user.displayName }),
@@ -412,6 +443,194 @@ const ChatWindow = ({ conversation, onBack }: ChatWindowProps) => {
       }
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await sendMessage();
+  };
+
+  const handleComposerKeyDown = async (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key !== "Enter") return;
+    if (e.altKey) return;
+
+    e.preventDefault();
+    await sendMessage();
+  };
+
+  const insertEmoji = (emoji: string) => {
+    const textarea = inputRef.current;
+    if (!textarea) {
+      setInput((current) => `${current}${emoji}`);
+      return;
+    }
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const next = `${input.slice(0, start)}${emoji}${input.slice(end)}`;
+    setInput(next);
+
+    requestAnimationFrame(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + emoji.length, start + emoji.length);
+    });
+  };
+
+  const toggleMessageSelection = (messageId: string) => {
+    setSelectedMessageIds((current) =>
+      current.includes(messageId)
+        ? current.filter((id) => id !== messageId)
+        : [...current, messageId]
+    );
+  };
+
+  const clearSelection = () => {
+    setSelectedMessageIds([]);
+    setShowForwardModal(false);
+  };
+
+  const deleteSelectedForMe = async () => {
+    if (!user || selectedMessages.length === 0) return;
+
+    setSending(true);
+    try {
+      const batch = writeBatch(db);
+      selectedMessages.forEach((msg) => {
+        batch.update(doc(db, parentCollection, parentId, "messages", msg.id), {
+          deletedFor: arrayUnion(user.uid),
+        });
+      });
+      await batch.commit();
+      clearSelection();
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const deleteSelectedForEveryone = async () => {
+    if (!canDeleteSelectedForEveryone) return;
+
+    const confirmed = window.confirm("Delete selected messages for everyone? They will be removed from all chats permanently.");
+    if (!confirmed) return;
+
+    setSending(true);
+    try {
+      const batch = writeBatch(db);
+      selectedMessages.forEach((msg) => {
+        batch.delete(doc(db, parentCollection, parentId, "messages", msg.id));
+      });
+      const remainingMessages = visibleMessages.filter((msg) => !selectedMessageIds.includes(msg.id) && msg.type === "text");
+      const lastRemainingMessage = remainingMessages[remainingMessages.length - 1];
+      batch.update(doc(db, parentCollection, parentId), {
+        lastMessage: lastRemainingMessage?.text ?? "",
+        lastMessageAt: lastRemainingMessage?.timestamp ?? serverTimestamp(),
+      });
+      await batch.commit();
+      clearSelection();
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const startEditingSelectedMessage = () => {
+    if (!canEditSelectedMessage || !selectedEditableMessage) return;
+    setEditingMessage(selectedEditableMessage);
+    setEditText(selectedEditableMessage.text);
+  };
+
+  const saveEditedMessage = async () => {
+    if (!user || !editingMessage) return;
+
+    const nextText = editText.trim();
+    if (!nextText || nextText === editingMessage.text) {
+      setEditingMessage(null);
+      setEditText("");
+      clearSelection();
+      return;
+    }
+
+    const sentAt =
+      editingMessage.timestamp && (editingMessage.timestamp as { toDate?: () => Date }).toDate
+        ? (editingMessage.timestamp as { toDate: () => Date }).toDate()
+        : null;
+
+    if (editingMessage.senderId !== user.uid || !sentAt || Date.now() - sentAt.getTime() > EDIT_WINDOW_MS) {
+      window.alert("This message can only be edited within 3 minutes after sending.");
+      setEditingMessage(null);
+      setEditText("");
+      clearSelection();
+      return;
+    }
+
+    setSending(true);
+    try {
+      const batch = writeBatch(db);
+      batch.update(doc(db, parentCollection, parentId, "messages", editingMessage.id), {
+        text: nextText,
+        edited: true,
+        editedAt: serverTimestamp(),
+      });
+
+      const lastVisibleTextMessage = visibleMessages.filter((msg) => msg.type === "text").at(-1);
+      if (lastVisibleTextMessage?.id === editingMessage.id) {
+        batch.update(doc(db, parentCollection, parentId), {
+          lastMessage: nextText,
+        });
+      }
+
+      await batch.commit();
+      setEditingMessage(null);
+      setEditText("");
+      clearSelection();
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const getForwardTargetLabel = (target: SelectedConversation) =>
+    target.type === "dm" ? target.other.displayName : target.name;
+
+  const forwardSelectedMessages = async (target: SelectedConversation) => {
+    if (!user || selectedMessages.length === 0) return;
+
+    setForwarding(true);
+    try {
+      const targetCollection: "chats" | "groups" = target.type === "dm" ? "chats" : "groups";
+      const targetId = target.type === "dm" ? target.chatId : target.groupId;
+      const targetMessageRef = messagesRef(targetCollection, targetId);
+
+      for (const msg of selectedMessages) {
+        await addDoc(targetMessageRef, {
+          text: msg.text,
+          senderId: user.uid,
+          timestamp: serverTimestamp(),
+          type: "text",
+          forwarded: true,
+        } satisfies Omit<MessageDoc, "id">);
+      }
+
+      const lastForwarded = selectedMessages[selectedMessages.length - 1]?.text ?? "Forwarded message";
+      const updateData: Record<string, unknown> = {
+        lastMessage: lastForwarded,
+        lastMessageAt: serverTimestamp(),
+      };
+
+      if (target.type === "dm") {
+        const otherId = target.participants.find((p) => p !== user.uid);
+        if (otherId) updateData[`unreadCount.${otherId}`] = increment(selectedMessages.length);
+      } else {
+        target.members.forEach((member) => {
+          if (member.uid !== user.uid) {
+            updateData[`unreadCount.${member.uid}`] = increment(selectedMessages.length);
+          }
+        });
+      }
+
+      await updateDoc(doc(db, targetCollection, targetId), updateData);
+      clearSelection();
+    } finally {
+      setForwarding(false);
     }
   };
 
@@ -456,7 +675,7 @@ const ChatWindow = ({ conversation, onBack }: ChatWindowProps) => {
                   ? <span className="text-[#3dfc82] drop-shadow-[0_0_2px_rgba(61,252,130,0.4)]">Online</span> 
                   : <span className="text-zinc-500">
                       {liveProfile?.lastSeen 
-                        ? `Last seen ${formatDistanceToNow(liveProfile.lastSeen.toDate(), { addSuffix: true })}` 
+                        ? `Last seen ${formatDistanceToNow((liveProfile.lastSeen as { toDate: () => Date }).toDate(), { addSuffix: true })}` 
                         : "Offline"}
                     </span>
               ) : (
@@ -557,12 +776,12 @@ const ChatWindow = ({ conversation, onBack }: ChatWindowProps) => {
         </AnimatePresence>
 
         {/* System log — conversation start */}
-        {messages.length === 0 && !isPending && (
-          <SystemLog text="Conversation started — messages are end-to-end encrypted" />
+        {visibleMessages.length === 0 && !isPending && (
+          <SystemLog text="Conversation started" />
         )}
 
         {/* Messages */}
-        {messages.map((msg) => (
+        {visibleMessages.map((msg) => (
           <MessageItem
             key={msg.id}
             text={msg.text}
@@ -572,6 +791,11 @@ const ChatWindow = ({ conversation, onBack }: ChatWindowProps) => {
             time={msg.timestamp ? new Date((msg.timestamp as { toDate: () => Date }).toDate()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}
             type={msg.type}
             status={getMessageStatus(msg)}
+            forwarded={msg.forwarded}
+            edited={msg.edited}
+            selected={selectedMessageIds.includes(msg.id)}
+            selectionMode={selectionMode}
+            onToggleSelect={msg.type === "text" ? () => toggleMessageSelection(msg.id) : undefined}
           />
         ))}
         <div ref={bottomRef} />
@@ -610,32 +834,112 @@ const ChatWindow = ({ conversation, onBack }: ChatWindowProps) => {
           <div className="text-center py-3 text-xs text-zinc-500 font-medium bg-zinc-200/50 dark:bg-zinc-800/40 border border-zinc-300/50 dark:border-zinc-700/40 rounded-xl">
             Connection request was rejected.
           </div>
+        ) : selectionMode ? (
+          <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-zinc-300 bg-white px-3 py-2 shadow-sm dark:border-zinc-800/80 dark:bg-zinc-900/40">
+            <button
+              type="button"
+              onClick={clearSelection}
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-white/[0.06] dark:hover:text-zinc-100"
+              aria-label="Cancel selection"
+            >
+              <X size={18} weight="bold" />
+            </button>
+            <span className="mr-auto text-xs font-semibold text-zinc-600 dark:text-zinc-300">
+              {selectedMessageIds.length} selected
+            </span>
+            {canEditSelectedMessage && (
+              <button
+                type="button"
+                onClick={startEditingSelectedMessage}
+                disabled={sending}
+                className="inline-flex items-center gap-2 rounded-xl bg-zinc-100 px-3 py-2 text-xs font-bold text-zinc-700 transition-colors hover:bg-zinc-200 disabled:opacity-50 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+              >
+                <PencilSimple size={15} weight="bold" />
+                Edit
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={deleteSelectedForMe}
+              disabled={sending}
+              className="inline-flex items-center gap-2 rounded-xl bg-zinc-100 px-3 py-2 text-xs font-bold text-zinc-700 transition-colors hover:bg-zinc-200 disabled:opacity-50 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+            >
+              <Trash size={15} weight="bold" />
+              Delete for me
+            </button>
+            {canDeleteSelectedForEveryone && (
+              <button
+                type="button"
+                onClick={deleteSelectedForEveryone}
+                disabled={sending}
+                className="inline-flex items-center gap-2 rounded-xl bg-red-500/10 px-3 py-2 text-xs font-bold text-red-500 transition-colors hover:bg-red-500/20 disabled:opacity-50"
+              >
+                <Trash size={15} weight="bold" />
+                Delete for everyone
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowForwardModal(true)}
+              disabled={forwarding}
+              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-emerald-500 disabled:opacity-50"
+            >
+              <ArrowBendUpRight size={15} weight="bold" />
+              Forward
+            </button>
+          </div>
         ) : (
           <form
             onSubmit={handleSend}
-            className={`flex items-center gap-2 bg-white dark:bg-zinc-900/40 border border-zinc-300 dark:border-zinc-800/80 rounded-2xl px-3 py-2 transition-all duration-300 focus-within:border-emerald-500/50 dark:focus-within:border-zinc-700/80 focus-within:bg-white dark:focus-within:bg-zinc-900/70 shadow-sm dark:shadow-none ${
+            className={`relative flex items-end gap-2 bg-white dark:bg-zinc-900/40 border border-zinc-300 dark:border-zinc-800/80 rounded-2xl px-3 py-2 transition-all duration-300 focus-within:border-emerald-500/50 dark:focus-within:border-zinc-700/80 focus-within:bg-white dark:focus-within:bg-zinc-900/70 shadow-sm dark:shadow-none ${
               isLocked && !(!isRequester) ? "opacity-40 pointer-events-none blur-[1px]" : ""
             }`}
           >
+            <AnimatePresence>
+              {showEmojiPicker && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                  transition={spring}
+                  className="absolute bottom-full left-2 mb-3 grid grid-cols-8 gap-1 rounded-2xl border border-zinc-200 bg-white p-2 shadow-2xl dark:border-white/[0.08] dark:bg-[#1a1d28]"
+                >
+                  {QUICK_EMOJIS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => insertEmoji(emoji)}
+                      className="flex h-8 w-8 items-center justify-center rounded-xl text-lg transition-colors hover:bg-zinc-100 dark:hover:bg-white/[0.06]"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <motion.button
               type="button"
+              onClick={() => setShowEmojiPicker((current) => !current)}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               transition={spring}
-              className="p-2 text-zinc-500 hover:text-emerald-400 transition-colors"
+              className="mb-1 p-2 text-zinc-500 hover:text-emerald-400 transition-colors"
               title="Emoji"
             >
               <Smiley size={20} />
             </motion.button>
 
 
-            <input
-              type="text"
+            <textarea
+              ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleComposerKeyDown}
               disabled={isLocked}
               placeholder={isLocked ? (isRequester ? "Waiting for acceptance..." : "Accept to reply...") : "Type a message..."}
-              className="flex-1 bg-transparent border-none outline-none text-sm text-zinc-900 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 disabled:cursor-not-allowed"
+              rows={1}
+              className="max-h-32 min-h-10 flex-1 resize-none bg-transparent py-2.5 text-sm leading-5 text-zinc-900 outline-none placeholder:text-zinc-400 disabled:cursor-not-allowed dark:text-zinc-200 dark:placeholder:text-zinc-600"
             />
 
             <motion.button
@@ -688,6 +992,149 @@ const ChatWindow = ({ conversation, onBack }: ChatWindowProps) => {
         </div>
       )}
 
+      {/* Edit Message Modal */}
+      <AnimatePresence>
+        {editingMessage && (
+          <div className="fixed inset-0 z-[195] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                setEditingMessage(null);
+                setEditText("");
+              }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.form
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              onSubmit={(e) => {
+                e.preventDefault();
+                saveEditedMessage();
+              }}
+              className="relative w-full max-w-sm overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-white/[0.08] dark:bg-[#1a1d28]"
+            >
+              <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-4 dark:border-white/[0.06]">
+                <div>
+                  <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Edit message</h3>
+                  <p className="text-xs text-zinc-500">Available for 3 minutes after sending</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingMessage(null);
+                    setEditText("");
+                  }}
+                  className="rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-white/[0.06] dark:hover:text-zinc-100"
+                  aria-label="Close edit modal"
+                >
+                  <X size={18} weight="bold" />
+                </button>
+              </div>
+
+              <div className="p-4">
+                <textarea
+                  value={editText}
+                  onChange={(e) => setEditText(e.target.value)}
+                  autoFocus
+                  rows={4}
+                  className="min-h-28 w-full resize-none rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm text-zinc-900 outline-none transition-colors focus:border-emerald-500/60 dark:border-white/[0.08] dark:bg-zinc-900/60 dark:text-zinc-100"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 border-t border-zinc-200 px-5 py-4 dark:border-white/[0.06]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingMessage(null);
+                    setEditText("");
+                  }}
+                  className="rounded-xl bg-zinc-100 px-4 py-2 text-xs font-bold text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!editText.trim() || sending}
+                  className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-emerald-500 disabled:opacity-50"
+                >
+                  Save
+                </button>
+              </div>
+            </motion.form>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Forward Messages Modal */}
+      <AnimatePresence>
+        {showForwardModal && (
+          <div className="fixed inset-0 z-[190] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowForwardModal(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="relative w-full max-w-sm overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-white/[0.08] dark:bg-[#1a1d28]"
+            >
+              <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-4 dark:border-white/[0.06]">
+                <div>
+                  <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Forward messages</h3>
+                  <p className="text-xs text-zinc-500">{selectedMessageIds.length} selected</p>
+                </div>
+                <button
+                  onClick={() => setShowForwardModal(false)}
+                  className="rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-white/[0.06] dark:hover:text-zinc-100"
+                  aria-label="Close forward modal"
+                >
+                  <X size={18} weight="bold" />
+                </button>
+              </div>
+
+              <div className="max-h-[360px] overflow-y-auto p-3">
+                {[...forwardChats, ...forwardGroups].length === 0 ? (
+                  <p className="px-3 py-8 text-center text-xs text-zinc-500">No chats available to forward to.</p>
+                ) : (
+                  <div className="space-y-1">
+                    {[...forwardChats, ...forwardGroups].map((target) => (
+                      <button
+                        key={target.type === "dm" ? `dm-${target.chatId}` : `group-${target.groupId}`}
+                        type="button"
+                        onClick={() => forwardSelectedMessages(target)}
+                        disabled={forwarding}
+                        className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-zinc-100 disabled:opacity-60 dark:hover:bg-white/[0.06]"
+                      >
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-emerald-500/10 text-sm font-bold text-emerald-500">
+                          {target.type === "dm"
+                            ? target.other.displayName[0]?.toUpperCase()
+                            : target.name[0]?.toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                            {getForwardTargetLabel(target)}
+                          </p>
+                          <p className="truncate text-xs text-zinc-500">
+                            {target.type === "dm" ? target.other.email : "Group chat"}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {showDeleteConfirm && (
@@ -707,7 +1154,7 @@ const ChatWindow = ({ conversation, onBack }: ChatWindowProps) => {
             >
               <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Clear Chat?</h3>
               <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-6 leading-relaxed">
-                This will delete all messages in this conversation for everyone. This action cannot be undone.
+                This will clear this conversation only for you. Other people will still keep their messages.
               </p>
               <div className="flex gap-2">
                 <button
@@ -721,7 +1168,7 @@ const ChatWindow = ({ conversation, onBack }: ChatWindowProps) => {
                   disabled={sending}
                   className="flex-1 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 dark:text-red-400 text-xs font-bold rounded-xl transition-all border border-red-500/20 disabled:opacity-50"
                 >
-                  {sending ? "Clearing..." : "Clear"}
+                  {sending ? "Clearing..." : "Clear for me"}
                 </button>
               </div>
             </motion.div>

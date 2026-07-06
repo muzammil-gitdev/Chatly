@@ -26,7 +26,7 @@ export async function requestFCMToken(userId: string) {
       appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
     };
     const swUrl = `/firebase-messaging-sw.js?config=${encodeURIComponent(JSON.stringify(firebaseConfig))}`;
-    
+
     // Check if we are in the browser
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
       // Register the SW
@@ -61,25 +61,24 @@ let isMessageListenerRegistered = false;
 
 export function setupForegroundMessaging() {
   if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
-  
+
   try {
     const messaging = getMessaging(app);
     if (isMessageListenerRegistered) return;
-    
+
     import("firebase/messaging").then(({ onMessage }) => {
       onMessage(messaging, (payload) => {
-        console.log("Foreground message received:", payload);
-        
+
         // Suppress system notification if user is actively viewing this exact chat
         const activeChatId = sessionStorage.getItem("activeChatId");
         const incomingChatId = payload.data?.chatId;
         const isCurrentlyViewing = document.hasFocus() && activeChatId && activeChatId === incomingChatId;
-        
+
         if (!isCurrentlyViewing) {
           const senderName = payload.data?.senderName || payload.notification?.title || "New Message";
           const body = payload.notification?.body || "You have a new message";
           const senderPhotoUrl = payload.data?.senderPhotoUrl || null;
-          
+
           import("sonner").then(({ toast }) => {
             toast.custom((t) => (
               <div className="flex items-start gap-3 p-4 bg-zinc-900/95 backdrop-blur-md text-white rounded-2xl shadow-2xl w-[360px] border border-zinc-800 pointer-events-auto transition-all cursor-pointer hover:bg-zinc-800/95" onClick={() => toast.dismiss(t)}>
@@ -93,8 +92,8 @@ export function setupForegroundMessaging() {
                   )}
                   <div className="absolute -bottom-1 -right-1 w-[18px] h-[18px] bg-[#25D366] rounded-full border-2 border-zinc-900 flex items-center justify-center">
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" fill="#25D366"/>
-                      <path d="M8 12L11 15L16 9" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" fill="#25D366" />
+                      <path d="M8 12L11 15L16 9" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </div>
                 </div>

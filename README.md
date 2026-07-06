@@ -10,6 +10,10 @@
 *   **One-on-One Messaging:** Enjoy seamless, real-time individual chats with read receipts and active typing indicators.
 *   **Hierarchical Group Streams:** Create and manage groups with granular authorization. Out-of-the-box structural authority maps out Group Creators/Admins from generalized members. Admins retain strict functional privileges to add, prune, or re-route user identities.
 *   **Sovereign Exits & System Logs:** Members can independently leave groups at any time. Native mutations (e.g., additions, deliberate exits) are compiled as isolated systemic events and rendered as unique mid-stream timeline logs.
+*   **Local Conversation Clearing:** Users can clear a conversation only for themselves. The other participant or group members keep their own chat history intact.
+*   **Selective Message Deletion:** Users can select messages and delete them for themselves, or delete their own sent messages for everyone. Chatly removes deleted-for-everyone messages completely instead of leaving a placeholder.
+*   **Message Forwarding:** Selected messages can be forwarded into direct chats or groups, with forwarded messages clearly labeled in the conversation.
+*   **Short-Window Message Editing:** Sent messages can be edited by the sender within a strict 3-minute window, with edited messages marked in the UI.
 
 ### 🔔 Push Notifications via Firebase FCM
 *   **Real-Time Alerts:** Stay connected with instant push notifications powered by Firebase Cloud Messaging (FCM).
@@ -71,6 +75,68 @@ Built entirely as a modern **Full-Stack Application**, handling both the rich cl
     *   `[✓✓ Green]` — Read: Reactive observer confirms the exact target user workspace view actively mounted the document into sight.
 *   **Contextual Messaging Retries:** Deeply nested reactive data schemas fully supporting inline replies, multi-tier threads, and nested quotes pointing back to parent string IDs.
 *   **Optimized Reactive Typing Subsystem:** Utilizing synchronized temporary presence maps in combination with aggressive debouncing algorithms to render live client typing signals (*"User is typing..."*) under minimal read-amplification overhead.
+*   **Per-User Visibility Controls:** `deletedFor` tracks which users have locally removed a message, keeping delete-for-me behavior private to that user.
+*   **Forward/Edit Metadata:** Forwarded and edited messages carry lightweight metadata (`forwarded`, `edited`, `editedAt`) so the UI can show the correct state without duplicating message models.
+
+---
+
+## Firestore Message Permissions
+
+Chatly's message actions require Firestore rules that separate local visibility changes from global destructive changes:
+
+*   **Delete for me / clear conversation:** Allowed through a narrow message update that only appends the current user's UID to `deletedFor`.
+*   **Delete for everyone:** Allowed only when the authenticated user is the original `senderId` of the message.
+*   **Edit message:** Allowed only for the original sender, only on text messages, and only within 3 minutes of the original `timestamp`.
+*   **Forward message:** Uses normal message creation rules because the forwarded copy is a new message from the current user with `forwarded: true`.
+
+If Firestore throws `Missing or insufficient permissions` while deleting, clearing, or editing messages, the deployed rules are usually missing one of these message update/delete permissions.
+
+Recommended helper rules:
+
+```js
+function deletedForSelfOnly() {
+  return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deletedFor'])
+    && request.resource.data.deletedFor is list
+    && request.auth.uid in request.resource.data.deletedFor
+    && (
+      !('deletedFor' in resource.data)
+        ? request.resource.data.deletedFor.hasOnly([request.auth.uid])
+        : request.resource.data.deletedFor.hasAll(resource.data.deletedFor)
+          && request.resource.data.deletedFor.size() <= resource.data.deletedFor.size() + 1
+    );
+}
+
+function messageEditBySenderWithinWindow() {
+  return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'edited', 'editedAt'])
+    && resource.data.senderId == request.auth.uid
+    && resource.data.type == "text"
+    && request.resource.data.text is string
+    && request.resource.data.text.size() > 0
+    && request.resource.data.edited == true
+    && request.resource.data.editedAt == request.time
+    && request.time <= resource.data.timestamp + duration.value(3, "m");
+}
+```
+
+Private chat messages should allow:
+
+```js
+allow update: if isChatParticipant(chatId)
+  && (deletedForSelfOnly() || messageEditBySenderWithinWindow());
+
+allow delete: if isChatParticipant(chatId)
+  && resource.data.senderId == request.auth.uid;
+```
+
+Group messages should allow:
+
+```js
+allow update: if isGroupMemberParent(groupId)
+  && (deletedForSelfOnly() || messageEditBySenderWithinWindow());
+
+allow delete: if isGroupMemberParent(groupId)
+  && resource.data.senderId == request.auth.uid;
+```
 
 ---
 

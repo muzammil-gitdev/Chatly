@@ -311,7 +311,10 @@ const GroupSettingsModal = ({ group, onClose }: GroupSettingsModalProps) => {
                               </div>
                             )}
                           </div>
-                          <p className="text-sm text-zinc-800 dark:text-zinc-300 flex-1 truncate">{u.displayName}</p>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm text-zinc-800 dark:text-zinc-300">{u.displayName}</p>
+                            <p className="truncate text-xs text-zinc-500">{u.email}</p>
+                          </div>
                           <button onClick={() => handleAddMember(u.uid)} className="text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 bg-emerald-500/10 px-2.5 py-1 rounded-lg flex-shrink-0 transition-colors">Add</button>
                         </div>
                       ))
