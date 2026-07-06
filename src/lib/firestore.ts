@@ -35,7 +35,7 @@ export interface FirestoreUser {
   location: string;
   isActivated: boolean;
   status: "online" | "offline";
-  lastSeen: any; // Firestore Timestamp
+  lastSeen: unknown; // Firestore Timestamp
   createdAt: unknown; // Firestore Timestamp
   fcmTokens?: string[];
   settings?: { theme: "dark" | "light"; notificationsEnabled: boolean };
@@ -56,6 +56,7 @@ export interface GroupDoc {
   name: string;
   description: string;
   photoURL: string | null;
+  photoPublicId?: string | null;
   adminId: string;
   members: Array<{ uid: string; status: "pending" | "accepted" }>;
   memberIds: string[];

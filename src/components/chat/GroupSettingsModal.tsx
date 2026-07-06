@@ -19,7 +19,7 @@ import { useAuth } from "@/context/AuthContext";
 const spring = { type: "spring", stiffness: 300, damping: 25 } as const;
 
 interface GroupSettingsModalProps {
-  group: GroupDoc & { id: string };
+  group: GroupDoc & { id?: string; groupId?: string };
   onClose: () => void;
 }
 
@@ -35,6 +35,7 @@ const GroupSettingsModal = ({ group, onClose }: GroupSettingsModalProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [uploadLoading, setUploadLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const groupId = group.id ?? group.groupId;
 
   useEffect(() => {
     if (!user) return;
@@ -59,9 +60,8 @@ const GroupSettingsModal = ({ group, onClose }: GroupSettingsModalProps) => {
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !user) return;
+    if (!file || !user || !isAdmin || !groupId) return;
     setUploadLoading(true);
-    const groupId = group.id || (group as any).groupId;
     try {
       const fd = new FormData();
       fd.append("file", file);
@@ -69,17 +69,20 @@ const GroupSettingsModal = ({ group, onClose }: GroupSettingsModalProps) => {
       fd.append("type", "group");
       const res = await fetch("/api/upload", { method: "POST", body: fd });
       if (!res.ok) throw new Error("Upload failed");
-      const { url } = await res.json();
-      await updateDoc(doc(db, COLLECTIONS.GROUPS, groupId), { photoURL: url });
+      const { url, publicId } = await res.json();
+      await updateDoc(doc(db, COLLECTIONS.GROUPS, groupId), { photoURL: url, photoPublicId: publicId });
       setPhotoURL(url);
     } finally {
       setUploadLoading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
   const handleSaveInfo = async () => {
+    if (!groupId) return;
     setSaving(true);
-    const groupId = group.id || (group as any).groupId;
     try {
       await updateDoc(doc(db, COLLECTIONS.GROUPS, groupId), {
         name: groupName.trim(),
@@ -92,14 +95,14 @@ const GroupSettingsModal = ({ group, onClose }: GroupSettingsModalProps) => {
   };
 
   const handleAddMember = async (uid: string) => {
-    const groupId = group.id || (group as any).groupId;
+    if (!groupId) return;
     const newMembers = [...group.members, { uid, status: "pending" }];
     const newMemberIds = [...(group.memberIds || group.members.map(m => m.uid)), uid];
     await updateDoc(doc(db, COLLECTIONS.GROUPS, groupId), { members: newMembers, memberIds: newMemberIds });
   };
 
   const handleRemoveMember = async (uid: string) => {
-    const groupId = group.id || (group as any).groupId;
+    if (!groupId) return;
     const newMembers = group.members.filter(m => m.uid !== uid);
     const newMemberIds = (group.memberIds || group.members.map(m => m.uid)).filter((id: string) => id !== uid);
     await updateDoc(doc(db, COLLECTIONS.GROUPS, groupId), { members: newMembers, memberIds: newMemberIds });
@@ -143,7 +146,7 @@ const GroupSettingsModal = ({ group, onClose }: GroupSettingsModalProps) => {
                     </div>
                   )}
                 </div>
-                {isAdmin && isEditing && (
+                {isAdmin && (
                   <>
                     <motion.button
                       onClick={() => fileInputRef.current?.click()}
@@ -151,6 +154,7 @@ const GroupSettingsModal = ({ group, onClose }: GroupSettingsModalProps) => {
                       whileTap={{ scale: 0.92 }}
                       disabled={uploadLoading}
                       transition={spring}
+                      aria-label="Change group photo"
                       className="absolute -bottom-1.5 -right-1.5 p-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-white shadow-lg disabled:opacity-60 transition-colors"
                     >
                       <Camera size={14} weight="fill" />
