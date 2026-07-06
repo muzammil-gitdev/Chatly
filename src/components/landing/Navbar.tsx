@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import ThemeToggle from "../ui/ThemeToggle";
 import { useAuth } from "@/context/AuthContext";
+import ChatlyLogo from "./ChatlyLogo";
 
 const Navbar = () => {
     const { user, loading } = useAuth();
@@ -19,18 +20,18 @@ const Navbar = () => {
 
     return (
         <nav
-            className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-                scrolled ? "glass py-3 shadow-lg" : "bg-transparent py-5"
+            className={`fixed left-0 right-0 top-0 z-50 border-b backdrop-blur-2xl transition-[background-color,border-color,box-shadow,padding] duration-500 ease-out ${
+                scrolled
+                    ? "border-border/50 bg-background/78 py-3 shadow-[0_18px_50px_rgba(15,23,42,0.08)] dark:border-white/[0.035] dark:bg-[#0b0c10]/72 dark:shadow-black/20"
+                    : "border-transparent bg-transparent py-5 shadow-none"
             }`}
         >
-            <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
-                <Link href="/" className="flex items-center space-x-2 group">
-                    <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                        <span className="text-white font-bold text-xl">C</span>
-                    </div>
-                    <span className="text-2xl font-bold font-outfit tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
-                        Chatly
-                    </span>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-4">
+                <Link href="/" className="group shrink-0" aria-label="Chatly home">
+                    <ChatlyLogo
+                        markClassName="h-10 w-10 transition-transform duration-300 group-hover:scale-105"
+                        textClassName="text-xl sm:text-2xl"
+                    />
                 </Link>
 
                 <div className="hidden md:flex items-center space-x-8">
@@ -39,14 +40,14 @@ const Navbar = () => {
                     <Link href="#security" className="text-sm font-medium hover:text-primary transition-colors">Security</Link>
                 </div>
 
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center gap-2 sm:gap-4">
                     <ThemeToggle />
                     {loading ? (
-                        <div className="w-20 h-8 bg-muted animate-pulse rounded-full" />
+                        <div className="w-16 sm:w-20 h-8 bg-muted animate-pulse rounded-full" />
                     ) : user ? (
                         <Link
                             href="/chat"
-                            className="px-6 py-2.5 bg-primary text-primary-foreground rounded-full text-sm font-bold shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:-translate-y-0.5 transition-all duration-300"
+                            className="px-4 sm:px-6 py-2.5 bg-primary text-primary-foreground rounded-full text-sm font-bold shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:-translate-y-0.5 transition-all duration-300"
                         >
                             Go to Chat
                         </Link>
@@ -54,13 +55,13 @@ const Navbar = () => {
                         <>
                             <Link
                                 href="/login"
-                                className="px-5 py-2 text-sm font-semibold hover:text-primary transition-colors"
+                                className="hidden px-5 py-2 text-sm font-semibold hover:text-primary transition-colors sm:inline-flex"
                             >
                                 Login
                             </Link>
                             <Link
                                 href="/register"
-                                className="px-6 py-2.5 bg-primary text-primary-foreground rounded-full text-sm font-bold shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:-translate-y-0.5 transition-all duration-300"
+                                className="px-4 sm:px-6 py-2.5 bg-primary text-primary-foreground rounded-full text-sm font-bold shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:-translate-y-0.5 transition-all duration-300"
                             >
                                 Sign Up
                             </Link>

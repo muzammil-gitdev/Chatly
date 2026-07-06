@@ -2,26 +2,26 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { Database, Zap, LockKeyhole } from "lucide-react";
+import { Database, KeyRound, ShieldCheck, Zap } from "lucide-react";
 
 const TechSecurity = () => {
     return (
-        <section id="security" className="py-24 relative bg-secondary/30">
-            <div className="max-w-7xl mx-auto px-6 relative z-10">
-                <div className="flex flex-col md:flex-row items-center gap-16">
-                    <div className="md:w-1/2 space-y-8">
+        <section id="security" className="py-20 sm:py-24 relative bg-secondary/30">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
+                <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+                    <div className="space-y-8">
                         <motion.div
                             initial={{ opacity: 0, x: -30 }}
                             whileInView={{ opacity: 1, x: 0 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.6 }}
                         >
-                            <h2 className="text-4xl md:text-5xl font-black mb-6">
+                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-6 leading-tight">
                                 Uncompromising Security. <br />
                                 <span className="text-gradient">Lightning Fast.</span>
                             </h2>
                             <p className="text-lg text-muted-foreground leading-relaxed">
-                                As developers, we know that trust is built on robust architecture. Chatly combines enterprise-grade security protocols with edge-network speeds, ensuring your data remains private without sacrificing performance.
+                                Chatly keeps access intentional with OTP verification and protected app routes, while realtime updates keep every conversation moving smoothly.
                             </p>
                         </motion.div>
 
@@ -31,14 +31,14 @@ const TechSecurity = () => {
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
                                 transition={{ duration: 0.6, delay: 0.1 }}
-                                className="flex items-start space-x-4"
+                                className="flex items-start gap-4"
                             >
-                                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0 text-emerald-500 mt-1">
-                                    <LockKeyhole className="w-6 h-6" />
+                                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0 text-emerald-500 mt-1">
+                                    <KeyRound className="w-6 h-6" />
                                 </div>
                                 <div>
                                     <h4 className="text-xl font-bold mb-1">Secure OTP Verification</h4>
-                                    <p className="text-muted-foreground text-sm leading-relaxed">Identity validation backed by a dual-layer permission system ensures only authorized individuals access your workspace.</p>
+                                    <p className="text-muted-foreground text-sm leading-relaxed">Email-based OTP checks help confirm the right person is signing in before they enter the chat workspace.</p>
                                 </div>
                             </motion.div>
 
@@ -47,14 +47,14 @@ const TechSecurity = () => {
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
                                 transition={{ duration: 0.6, delay: 0.2 }}
-                                className="flex items-start space-x-4"
+                                className="flex items-start gap-4"
                             >
-                                <div className="w-12 h-12 rounded-xl bg-cyan-500/10 flex items-center justify-center flex-shrink-0 text-cyan-500 mt-1">
-                                    <Database className="w-6 h-6" />
+                                <div className="w-12 h-12 rounded-xl bg-cyan-500/10 flex items-center justify-center shrink-0 text-cyan-500 mt-1">
+                                    <ShieldCheck className="w-6 h-6" />
                                 </div>
                                 <div>
-                                    <h4 className="text-xl font-bold mb-1">Encrypted Database</h4>
-                                    <p className="text-muted-foreground text-sm leading-relaxed">Your data is stored in state-of-the-art secure databases, protecting against breaches and unauthorized access.</p>
+                                    <h4 className="text-xl font-bold mb-1">Protected App Access</h4>
+                                    <p className="text-muted-foreground text-sm leading-relaxed">Authenticated routes, request handling, and profile checks keep the chat experience controlled and predictable.</p>
                                 </div>
                             </motion.div>
 
@@ -63,43 +63,61 @@ const TechSecurity = () => {
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
                                 transition={{ duration: 0.6, delay: 0.3 }}
-                                className="flex items-start space-x-4"
+                                className="flex items-start gap-4"
                             >
-                                <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center flex-shrink-0 text-indigo-500 mt-1">
+                                <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center shrink-0 text-indigo-500 mt-1">
                                     <Zap className="w-6 h-6" />
                                 </div>
                                 <div>
                                     <h4 className="text-xl font-bold mb-1">Real-Time Updates</h4>
-                                    <p className="text-muted-foreground text-sm leading-relaxed">Powered by edge functions and WebSockets, delivering sub-millisecond state mutations globally.</p>
+                                    <p className="text-muted-foreground text-sm leading-relaxed">Messages, delivery states, and active conversations refresh quickly so the interface feels alive without extra effort.</p>
                                 </div>
                             </motion.div>
                         </div>
                     </div>
 
-                    <div className="md:w-1/2 w-full">
+                    <div className="w-full">
                         <motion.div 
                             initial={{ opacity: 0, scale: 0.9 }}
                             whileInView={{ opacity: 1, scale: 1 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.8 }}
-                            className="relative aspect-square max-w-md mx-auto"
+                            className="relative mx-auto max-w-md rounded-3xl border border-border bg-background/70 p-5 shadow-2xl shadow-black/5 backdrop-blur dark:shadow-black/20 sm:p-6"
                         >
-                            {/* Decorative Tech Graphic */}
-                            <div className="absolute inset-0 bg-gradient-to-tr from-emerald-500/20 to-cyan-500/20 rounded-full blur-3xl opacity-50" />
-                            <div className="absolute inset-8 rounded-full border border-primary/20 animate-spin-slow" style={{ animationDuration: '20s' }} />
-                            <div className="absolute inset-16 rounded-full border border-primary/40 border-dashed animate-spin-slow" style={{ animationDuration: '15s', animationDirection: 'reverse' }} />
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="w-32 h-32 bg-background border border-border shadow-2xl rounded-2xl flex items-center justify-center z-20">
-                                    <LockKeyhole className="w-12 h-12 text-primary" />
+                            <div className="rounded-2xl border border-border bg-secondary/60 p-5">
+                                <div className="mb-5 flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-bold text-muted-foreground">Access check</p>
+                                        <h3 className="text-2xl font-black">OTP verified</h3>
+                                    </div>
+                                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                                        <ShieldCheck className="h-6 w-6" />
+                                    </div>
+                                </div>
+                                <div className="space-y-3">
+                                    {[
+                                        ["Email OTP", "Passed"],
+                                        ["Session", "Active"],
+                                        ["Chat route", "Allowed"],
+                                    ].map(([label, status]) => (
+                                        <div key={label} className="flex items-center justify-between rounded-xl border border-border bg-background/80 px-4 py-3 text-sm">
+                                            <span className="font-semibold text-foreground">{label}</span>
+                                            <span className="font-bold text-primary">{status}</span>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
-                            
-                            {/* Floating nodes */}
-                            <div className="absolute top-1/4 left-0 w-12 h-12 glass rounded-xl flex items-center justify-center animate-float shadow-lg">
-                                <Database className="w-6 h-6 text-emerald-500" />
-                            </div>
-                            <div className="absolute bottom-1/4 right-0 w-12 h-12 glass rounded-xl flex items-center justify-center animate-float shadow-lg" style={{ animationDelay: '1s' }}>
-                                <Zap className="w-6 h-6 text-cyan-500" />
+                            <div className="mt-4 grid grid-cols-2 gap-4">
+                                <div className="rounded-2xl border border-border bg-secondary/40 p-4">
+                                    <Database className="mb-3 h-5 w-5 text-cyan-500" />
+                                    <p className="text-sm font-bold">Synced data</p>
+                                    <p className="mt-1 text-xs text-muted-foreground">Realtime chat state</p>
+                                </div>
+                                <div className="rounded-2xl border border-border bg-secondary/40 p-4">
+                                    <Zap className="mb-3 h-5 w-5 text-primary" />
+                                    <p className="text-sm font-bold">Fast updates</p>
+                                    <p className="mt-1 text-xs text-muted-foreground">Low-friction UI</p>
+                                </div>
                             </div>
                         </motion.div>
                     </div>

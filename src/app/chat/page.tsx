@@ -11,6 +11,7 @@ import NewGroupModal from "@/components/chat/NewGroupModal";
 import { motion } from "framer-motion";
 import { ChatCircle, UsersThree, GearSix } from "@phosphor-icons/react";
 import { useChatsQuery, useGroupsQuery } from "@/lib/firebase-hooks";
+import ChatlyLogo from "@/components/landing/ChatlyLogo";
 
 type View = "messages" | "groups" | "settings";
 
@@ -21,12 +22,12 @@ function LoadingScreen() {
       <motion.div
         animate={{ opacity: [0.4, 1, 0.4] }}
         transition={{ repeat: Infinity, duration: 1.6, ease: "easeInOut" }}
-        className="flex items-center gap-2"
+        className="flex items-center"
       >
-        <div className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-lg flex items-center justify-center">
-          <span className="text-white font-semibold text-sm font-outfit">C</span>
-        </div>
-        <span className="text-zinc-500 text-sm font-medium tracking-tight">Chatly</span>
+        <ChatlyLogo
+          markClassName="h-10 w-10"
+          textClassName="text-lg text-zinc-500 dark:text-zinc-500"
+        />
       </motion.div>
     </div>
   );

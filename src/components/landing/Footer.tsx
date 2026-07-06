@@ -2,22 +2,23 @@
 
 import React from "react";
 import Link from "next/link";
-import { Mail, Heart } from "lucide-react";
+import { Heart } from "lucide-react";
+import ChatlyLogo from "./ChatlyLogo";
 
 const Footer = () => {
     return (
         <footer className="bg-background border-t border-border py-12">
             <div className="max-w-7xl mx-auto px-6">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-10 md:gap-12 mb-12">
                     <div className="col-span-1 md:col-span-2">
-                        <Link href="/" className="flex items-center space-x-2 mb-6 group">
-                            <div className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-lg flex items-center justify-center shadow-md">
-                                <span className="text-white font-bold text-sm">C</span>
-                            </div>
-                            <span className="text-xl font-bold tracking-tight">Chatly</span>
+                        <Link href="/" className="mb-6 inline-flex group" aria-label="Chatly home">
+                            <ChatlyLogo
+                                markClassName="h-9 w-9 transition-transform duration-300 group-hover:scale-105"
+                                textClassName="text-xl"
+                            />
                         </Link>
                         <p className="text-muted-foreground text-sm leading-relaxed max-w-sm">
-                            A high-performance, serverless messaging platform for the modern era. Secure, fast, and scalable.
+                            A clean real-time messaging app with OTP login, group chats, notifications, and a focused chat experience.
                         </p>
                     </div>
 
