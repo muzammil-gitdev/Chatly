@@ -127,7 +127,7 @@ const Hero = () => {
                                             </div>
                                             <div className="min-w-0">
                                                 <p className="truncate text-sm font-bold">Zeeshan Haider</p>
-                                                <p className="truncate text-xs text-slate-400">what&apos;s going on</p>
+                                                <p className="truncate text-xs text-slate-400">PR looks good</p>
                                             </div>
                                         </div>
                                     </div>
@@ -135,7 +135,7 @@ const Hero = () => {
                                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-900/70 text-sm font-bold text-primary">Z</div>
                                         <div className="min-w-0">
                                             <p className="truncate text-sm font-bold">Zain Ali</p>
-                                            <p className="truncate text-xs text-slate-400">halo</p>
+                                            <p className="truncate text-xs text-slate-400">Merged the fix</p>
                                         </div>
                                     </div>
                                 </div>
@@ -155,30 +155,32 @@ const Hero = () => {
                                     <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-400">OTP verified</span>
                                 </div>
 
-                                <div className="relative flex-1 overflow-hidden px-4 py-6 sm:px-6">
-                                    <div className="ml-auto mb-3 max-w-[70%] rounded-2xl rounded-tr-md bg-primary px-4 py-3 text-sm leading-6 shadow-lg shadow-emerald-500/15">
-                                        Hi
-                                        <div className="mt-1 flex items-center justify-end gap-1 text-[10px] font-bold text-white/60">
+                                <div className="relative flex-1 overflow-hidden px-4 py-5 sm:px-6">
+                                    <div className="ml-auto mb-2.5 max-w-[68%] rounded-2xl rounded-tr-md bg-primary px-4 py-2.5 text-sm leading-5 shadow-lg shadow-emerald-500/15">
+                                        Morning, pushed the build.
+                                        <div className="mt-0.5 flex items-center justify-end gap-1 text-[10px] font-bold text-white/60">
                                             02:45 PM <CheckCheck className="h-3.5 w-3.5" />
                                         </div>
                                     </div>
-                                    <div className="ml-auto mb-10 max-w-[78%] rounded-2xl rounded-tr-md bg-primary px-4 py-3 text-sm leading-6 shadow-lg shadow-emerald-500/15">
-                                        How&apos;s the deployment going?
-                                        <div className="mt-1 flex items-center justify-end gap-1 text-[10px] font-bold text-white/60">
+                                    <div className="ml-auto mb-5 max-w-[76%] rounded-2xl rounded-tr-md bg-primary px-4 py-2.5 text-sm leading-5 shadow-lg shadow-emerald-500/15">
+                                        Can you do a quick review before we merge?
+                                        <div className="mt-0.5 flex items-center justify-end gap-1 text-[10px] font-bold text-white/60">
                                             02:45 PM <CheckCheck className="h-3.5 w-3.5" />
                                         </div>
                                     </div>
-                                    <div className="mb-3 max-w-[72%] rounded-2xl rounded-tl-md border border-white/10 bg-[#181b26] px-4 py-3 text-sm leading-6">
-                                        perfectly fine. All tests are passed successfully!
-                                        <div className="mt-1 text-right text-[10px] font-bold text-slate-500">02:45 PM</div>
+                                    <div className="mb-2.5 max-w-[72%] rounded-2xl rounded-tl-md border border-white/10 bg-[#181b26] px-4 py-2.5 text-sm leading-5">
+                                        Looks good. Tests are green and the auth edge case is covered.
+                                        <div className="mt-0.5 text-right text-[10px] font-bold text-slate-500">02:45 PM</div>
                                     </div>
-                                    <div className="mt-20 max-w-[62%] rounded-2xl rounded-tl-md border border-white/10 bg-[#181b26] px-4 py-3 text-sm leading-6 sm:mt-24">
-                                        yup
-                                        <div className="mt-1 text-right text-[10px] font-bold text-slate-500">01:57 PM</div>
+                                    <div className="ml-auto mb-2.5 max-w-[70%] rounded-2xl rounded-tr-md bg-primary px-4 py-2.5 text-sm leading-5 shadow-lg shadow-emerald-500/15">
+                                        Perfect. I&apos;ll tag the release now.
+                                        <div className="mt-0.5 flex items-center justify-end gap-1 text-[10px] font-bold text-white/60">
+                                            02:46 PM <CheckCheck className="h-3.5 w-3.5" />
+                                        </div>
                                     </div>
-                                    <div className="mt-3 max-w-[68%] rounded-2xl rounded-tl-md border border-white/10 bg-[#181b26] px-4 py-3 text-sm leading-6">
-                                        what&apos;s going on
-                                        <div className="mt-1 text-right text-[10px] font-bold text-slate-500">01:57 PM</div>
+                                    <div className="max-w-[68%] rounded-2xl rounded-tl-md border border-white/10 bg-[#181b26] px-4 py-2.5 text-sm leading-5">
+                                        Nice. I&apos;ll keep an eye on logs for a few minutes.
+                                        <div className="mt-0.5 text-right text-[10px] font-bold text-slate-500">02:46 PM</div>
                                     </div>
                                 </div>
 
