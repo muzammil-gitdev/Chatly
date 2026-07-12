@@ -1,7 +1,4 @@
-"use client";
-
 import React from "react";
-import { motion } from "framer-motion";
 import { Database, KeyRound, ShieldCheck, Zap } from "lucide-react";
 
 const TechSecurity = () => {
@@ -10,12 +7,7 @@ const TechSecurity = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
                 <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
                     <div className="space-y-8">
-                        <motion.div
-                            initial={{ opacity: 0, x: -30 }}
-                            whileInView={{ opacity: 1, x: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.6 }}
-                        >
+                        <div>
                             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-6 leading-tight">
                                 Uncompromising Security. <br />
                                 <span className="text-gradient">Lightning Fast.</span>
@@ -23,14 +15,10 @@ const TechSecurity = () => {
                             <p className="text-lg text-muted-foreground leading-relaxed">
                                 Chatly keeps access intentional with OTP verification and protected app routes, while realtime updates keep every conversation moving smoothly.
                             </p>
-                        </motion.div>
+                        </div>
 
                         <div className="space-y-6">
-                            <motion.div 
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.6, delay: 0.1 }}
+                            <div
                                 className="flex items-start gap-4"
                             >
                                 <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0 text-emerald-500 mt-1">
@@ -40,13 +28,9 @@ const TechSecurity = () => {
                                     <h4 className="text-xl font-bold mb-1">Secure OTP Verification</h4>
                                     <p className="text-muted-foreground text-sm leading-relaxed">Email-based OTP checks help confirm the right person is signing in before they enter the chat workspace.</p>
                                 </div>
-                            </motion.div>
+                            </div>
 
-                            <motion.div 
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.6, delay: 0.2 }}
+                            <div
                                 className="flex items-start gap-4"
                             >
                                 <div className="w-12 h-12 rounded-xl bg-cyan-500/10 flex items-center justify-center shrink-0 text-cyan-500 mt-1">
@@ -56,13 +40,9 @@ const TechSecurity = () => {
                                     <h4 className="text-xl font-bold mb-1">Protected App Access</h4>
                                     <p className="text-muted-foreground text-sm leading-relaxed">Authenticated routes, request handling, and profile checks keep the chat experience controlled and predictable.</p>
                                 </div>
-                            </motion.div>
+                            </div>
 
-                            <motion.div 
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.6, delay: 0.3 }}
+                            <div
                                 className="flex items-start gap-4"
                             >
                                 <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center shrink-0 text-indigo-500 mt-1">
@@ -72,16 +52,12 @@ const TechSecurity = () => {
                                     <h4 className="text-xl font-bold mb-1">Real-Time Updates</h4>
                                     <p className="text-muted-foreground text-sm leading-relaxed">Messages, delivery states, and active conversations refresh quickly so the interface feels alive without extra effort.</p>
                                 </div>
-                            </motion.div>
+                            </div>
                         </div>
                     </div>
 
                     <div className="w-full">
-                        <motion.div 
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            whileInView={{ opacity: 1, scale: 1 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.8 }}
+                        <div
                             className="relative mx-auto max-w-md rounded-3xl border border-border bg-background/70 p-5 shadow-2xl shadow-black/5 backdrop-blur dark:shadow-black/20 sm:p-6"
                         >
                             <div className="rounded-2xl border border-border bg-secondary/60 p-5">
@@ -119,7 +95,7 @@ const TechSecurity = () => {
                                     <p className="mt-1 text-xs text-muted-foreground">Low-friction UI</p>
                                 </div>
                             </div>
-                        </motion.div>
+                        </div>
                     </div>
                 </div>
             </div>

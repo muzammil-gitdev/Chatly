@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 
 type ChatlyLogoProps = {
@@ -44,7 +42,7 @@ const ChatlyLogo = ({
                 </defs>
             </svg>
             {showText ? (
-                <span className={`font-outfit font-black tracking-normal text-foreground ${textClassName}`}>
+                <span className={`font-inter font-black tracking-normal text-foreground ${textClassName}`}>
                     Chatly
                 </span>
             ) : null}

@@ -1,7 +1,4 @@
-"use client";
-
 import React from "react";
-import { motion } from "framer-motion";
 import { Bell, Users, Settings, MessageSquare } from "lucide-react";
 import ChatlyLogo from "./ChatlyLogo";
 
@@ -10,34 +7,22 @@ const Features = () => {
         <section id="features" className="py-20 sm:py-24 bg-secondary/30 relative overflow-hidden">
             <div className="max-w-7xl mx-auto px-4 sm:px-6">
                 <div className="text-center mb-12 sm:mb-16">
-                    <motion.h2 
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.6 }}
+                    <h2
                         className="text-3xl sm:text-4xl md:text-5xl font-black mb-4"
                     >
                         Everything your chats need.
-                    </motion.h2>
-                    <motion.p 
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.6, delay: 0.1 }}
+                    </h2>
+                    <p
                         className="text-muted-foreground max-w-2xl mx-auto text-base sm:text-lg leading-relaxed"
                     >
                         A focused messaging experience with realtime conversations, groups, notifications, and enough control to keep daily communication simple.
-                    </motion.p>
+                    </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 lg:auto-rows-[240px]">
                     
                     {/* Card 1: Large - Real-time Messaging */}
-                    <motion.div 
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.5, delay: 0.1 }}
+                    <div
                         className="lg:col-span-2 lg:row-span-2 p-6 sm:p-8 rounded-3xl glass border border-primary/10 dark:border-border/50 shadow-xl dark:shadow-none hover:border-primary/30 transition-all duration-300 relative overflow-hidden group flex min-h-[360px] flex-col justify-between"
                     >
                         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 group-hover:bg-primary/20 transition-colors duration-500" />
@@ -63,14 +48,10 @@ const Features = () => {
                                 Send messages, see delivery states, and keep conversations updated without refreshing the page.
                             </p>
                         </div>
-                    </motion.div>
+                    </div>
 
                     {/* Card 2: Medium - Push Notifications */}
-                    <motion.div 
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.5, delay: 0.2 }}
+                    <div
                         className="lg:col-span-2 lg:row-span-1 p-6 sm:p-8 rounded-3xl glass border border-primary/10 dark:border-border/50 shadow-xl dark:shadow-none hover:border-primary/30 transition-all duration-300 relative overflow-hidden group flex items-center justify-between gap-6"
                     >
                         <div className="relative z-10 max-w-[200px] md:max-w-[260px]">
@@ -87,14 +68,10 @@ const Features = () => {
                             <div className="absolute inset-0 bg-cyan-500/20 rounded-full blur-2xl group-hover:blur-3xl transition-all duration-500" />
                             <Bell className="w-16 h-16 text-cyan-500 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-500" />
                         </div>
-                    </motion.div>
+                    </div>
 
                     {/* Card 3: Small - Group Chats */}
-                    <motion.div 
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.5, delay: 0.3 }}
+                    <div
                         className="lg:col-span-1 lg:row-span-1 p-6 rounded-3xl glass border border-primary/10 dark:border-border/50 shadow-xl dark:shadow-none hover:border-primary/30 transition-all duration-300 relative overflow-hidden group flex min-h-[220px] flex-col justify-between lg:min-h-0"
                     >
                         <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 group-hover:scale-105 transition-transform duration-300">
@@ -104,14 +81,10 @@ const Features = () => {
                             <h3 className="text-lg font-bold mb-1">Group Chats</h3>
                             <p className="text-sm text-muted-foreground">Create shared spaces for friends, teams, and quick project updates.</p>
                         </div>
-                    </motion.div>
+                    </div>
 
                     {/* Card 4: Small - Profile Customization */}
-                    <motion.div 
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.5, delay: 0.4 }}
+                    <div
                         className="lg:col-span-1 lg:row-span-1 p-6 rounded-3xl glass border border-primary/10 dark:border-border/50 shadow-xl dark:shadow-none hover:border-primary/30 transition-all duration-300 relative overflow-hidden group flex min-h-[220px] flex-col justify-between lg:min-h-0"
                     >
                         <div className="w-12 h-12 bg-secondary rounded-xl flex items-center justify-center mb-4 group-hover:rotate-90 transition-transform duration-500">
@@ -121,7 +94,7 @@ const Features = () => {
                             <h3 className="text-lg font-bold mb-1">Customization</h3>
                             <p className="text-sm text-muted-foreground">Manage profile details and keep your chat workspace familiar.</p>
                         </div>
-                    </motion.div>
+                    </div>
 
                 </div>
             </div>

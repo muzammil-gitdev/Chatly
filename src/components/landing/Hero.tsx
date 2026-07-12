@@ -1,16 +1,9 @@
-"use client";
-
 import React from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { ArrowRight, CheckCheck, MessageCircle, Plus, Search, Send, ShieldCheck, Sparkles, Users, Zap } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
 import ChatlyLogo from "./ChatlyLogo";
 
 const Hero = () => {
-    const { user } = useAuth();
-    const primaryHref = user ? "/chat" : "/register";
-
     return (
         <section className="relative overflow-hidden px-4 pb-16 pt-28 sm:px-6 sm:pt-32 lg:min-h-screen lg:pb-20">
             <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_15%_20%,rgba(16,185,129,0.14),transparent_28%),linear-gradient(135deg,rgba(16,185,129,0.08),transparent_32%),linear-gradient(to_bottom,var(--background),var(--background))]" />
@@ -18,42 +11,30 @@ const Hero = () => {
 
             <div className="relative z-10 mx-auto grid w-full max-w-7xl items-center gap-10 lg:grid-cols-[0.92fr_1.08fr] xl:gap-14">
                 <div className="max-w-2xl text-left">
-                    <motion.div
-                        initial={{ opacity: 0, y: 14 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5 }}
+                    <div
                         className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3.5 py-2 text-xs font-bold uppercase tracking-[0.18em] text-primary shadow-sm shadow-primary/10"
                     >
                         <Sparkles className="h-3.5 w-3.5" />
                         Private real-time chat
-                    </motion.div>
+                    </div>
 
-                    <motion.h1
-                        initial={{ opacity: 0, y: 18 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.55, delay: 0.08 }}
+                    <h1
                         className="max-w-[12ch] text-4xl font-black leading-[1.02] tracking-normal text-foreground sm:text-6xl lg:text-7xl"
                     >
                         Chat that feels instant, private, and human.
-                    </motion.h1>
+                    </h1>
 
-                    <motion.p
-                        initial={{ opacity: 0, y: 18 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.55, delay: 0.16 }}
+                    <p
                         className="mt-6 max-w-xl text-base leading-8 text-muted-foreground sm:text-lg"
                     >
                         Chatly brings OTP login, live delivery status, and smooth group conversations into one clean workspace built for everyday messaging.
-                    </motion.p>
+                    </p>
 
-                    <motion.div
-                        initial={{ opacity: 0, y: 18 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.55, delay: 0.24 }}
+                    <div
                         className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row"
                     >
-                        <Link href={primaryHref} className="inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-primary px-7 text-base font-bold text-primary-foreground shadow-xl shadow-emerald-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-emerald-500/35">
-                            {user ? "Open Chat" : "Start Chatting"}
+                        <Link href="/register" className="inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-primary px-7 text-base font-bold text-primary-foreground shadow-xl shadow-emerald-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-emerald-500/35">
+                            Start Chatting
                             <ArrowRight className="h-4.5 w-4.5" />
                         </Link>
 
@@ -61,12 +42,9 @@ const Hero = () => {
                             <MessageCircle className="h-4.5 w-4.5 text-primary" />
                             See how it works
                         </Link>
-                    </motion.div>
+                    </div>
 
-                    <motion.div
-                        initial={{ opacity: 0, y: 18 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.55, delay: 0.32 }}
+                    <div
                         className="mt-9 grid max-w-xl grid-cols-1 gap-3 text-sm sm:grid-cols-3"
                     >
                         {[
@@ -79,13 +57,10 @@ const Hero = () => {
                                 <span className="font-semibold text-foreground/85">{item.label}</span>
                             </div>
                         ))}
-                    </motion.div>
+                    </div>
                 </div>
 
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.96, y: 24 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    transition={{ duration: 0.65, delay: 0.18 }}
+                <div
                     className="relative mx-auto w-full max-w-[720px]"
                 >
                     <div className="absolute -left-5 top-8 h-28 w-28 rounded-[2rem] border border-primary/15 bg-primary/10 blur-2xl" />
@@ -196,7 +171,7 @@ const Hero = () => {
                             </div>
                         </div>
                     </div>
-                </motion.div>
+                </div>
             </div>
         </section>
     );

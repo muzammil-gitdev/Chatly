@@ -5,8 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, EnvelopeSimple, Lock, Eye, EyeSlash } from "@phosphor-icons/react";
-import { useAuth } from "@/context/AuthContext";
-import clsx from "clsx";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
 
 const spring = { type: "spring", stiffness: 300, damping: 25 } as const;
 
@@ -24,7 +23,7 @@ function Alert({ message }: { message: string }) {
   );
 }
 
-const LoginPage = () => {
+const LoginContent = () => {
   const router = useRouter();
   const { login } = useAuth();
   const [form, setForm] = useState({ email: "", password: "" });
@@ -168,5 +167,11 @@ const LoginPage = () => {
     </div>
   );
 };
+
+const LoginPage = () => (
+  <AuthProvider>
+    <LoginContent />
+  </AuthProvider>
+);
 
 export default LoginPage;

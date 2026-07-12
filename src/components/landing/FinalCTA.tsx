@@ -1,19 +1,12 @@
-"use client";
-
 import React from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 
 const FinalCTA = () => {
     return (
         <section className="py-20 sm:py-24 relative overflow-hidden bg-background">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10">
-                <motion.div 
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.8 }}
+                <div
                     className="relative overflow-hidden rounded-3xl border border-border bg-secondary/40 p-8 text-center shadow-2xl shadow-black/5 dark:shadow-black/20 sm:p-12 md:p-16"
                 >
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(16,185,129,0.16),transparent_34%),radial-gradient(circle_at_75%_15%,rgba(6,182,212,0.12),transparent_30%)]" />
@@ -35,7 +28,7 @@ const FinalCTA = () => {
                             <ArrowRight className="h-4.5 w-4.5" />
                         </Link>
                     </div>
-                </motion.div>
+                </div>
             </div>
         </section>
     );

@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/ui/ThemeProvider";
-import { AuthProvider } from "@/context/AuthContext";
-import { QueryProvider } from "@/components/ui/QueryProvider";
 import { Analytics } from "@vercel/analytics/next";
 import "@/styles/globals.css";
-import { Toaster } from "sonner";
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+});
 
 export const metadata: Metadata = {
   title: "Chatly | Messaging for the Zero-Trust Era",
@@ -21,19 +25,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: `(function(){try{var t=localStorage.getItem('theme'),d=window.matchMedia('(prefers-color-scheme:dark)').matches;if(t==='dark'||(t===null&&d))document.documentElement.classList.add('dark')}catch(e){}})()`,
           }}
         />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Outfit:wght@100..900&display=swap" rel="stylesheet" />
       </head>
-      <body className="font-inter bg-background text-foreground">
-        <QueryProvider>
-          <ThemeProvider>
-            <AuthProvider>
-              {children}
-              <Toaster position="top-right" />
-            </AuthProvider>
-          </ThemeProvider>
-        </QueryProvider>
+      <body className={`${inter.variable} font-inter bg-background text-foreground`}>
+        <ThemeProvider>{children}</ThemeProvider>
         <Analytics />
       </body>
     </html>

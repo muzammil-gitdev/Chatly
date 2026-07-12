@@ -166,7 +166,7 @@ const ForgotPasswordPage = () => {
             <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
               <span className="text-white font-semibold text-xl">C</span>
             </div>
-            <span className="text-2xl font-semibold tracking-tight font-outfit">Chatly</span>
+            <span className="text-2xl font-semibold tracking-tight font-inter">Chatly</span>
           </Link>
           <h1 className="text-3xl font-semibold tracking-tight mb-2">Reset Password</h1>
           <p className="text-muted-foreground text-sm">We'll help you back in securely.</p>
