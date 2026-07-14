@@ -64,6 +64,46 @@ Built entirely as a modern **Full-Stack Application**, handling both the rich cl
 *   **Vercel Analytics:** Native edge tracking to monitor user experience, performance, and visitor metrics.
 *   **Vercel Edge Network:** Serverless deployment pipeline ensuring low-latency asset delivery and API execution worldwide.
 
+### Admin Portal & Operations
+*   **Admin Authentication:** `/admin/login` signs in through Firebase Auth and only allows accounts with the `admin` custom claim or an active Firestore `admins/{uid}` document.
+*   **Protected Admin Routes:** Middleware protects `/admin/*` routes with the `chatly_admin_session` cookie and redirects non-admin visitors back to the admin login page.
+*   **User Management:** Admins can search users, view core account columns, suspend/reactivate Firebase Auth accounts, and delete user profiles from Firestore.
+*   **Suspension Enforcement:** Suspended users are disabled in Firebase Auth, marked with `isSuspended` in Firestore, forced offline, and automatically signed out from the client session.
+*   **Vercel Analytics Cache:** The admin dashboard syncs Vercel analytics into Firestore daily documents under `adminAnalyticsDaily` and stores sync metadata in `adminAnalyticsMeta`.
+*   **ISR/Cache Revalidation:** Admin analytics reads use `unstable_cache` with cache tags and revalidate after sync so dashboard visits can load cached aggregates instead of repeatedly reading every source document.
+
+### Admin Analytics Performance Notes
+*   **Cached Source of Truth:** The dashboard renders from Firestore cache instead of calling Vercel Analytics on every admin visit.
+*   **Manual Sync Only:** Vercel REST calls run only when an admin presses `Sync Data`; regular dashboard loads read cached aggregate JSON.
+*   **Tag Revalidation:** Sync invalidates the analytics cache tag immediately after new rows are saved, so the next dashboard read gets fresh data without waiting for the default cache window.
+*   **Range Bucketing:** The client memoizes chart ranges. Weekly and monthly views fill missing days with zero-value buckets; 3-month, yearly, and all-time views aggregate daily documents into monthly buckets for fewer chart points.
+*   **Low Client Work:** Chart path generation, axis labels, and range buckets are memoized so changing filters only recomputes the active graph data.
+
+### Admin Analytics Environment
+The analytics sync endpoint reads all private Vercel values from environment variables:
+
+```text
+VERCEL_API_TOKEN=
+VERCEL_ACCESS_TOKEN=
+VERCEL_PROJECT_ID=
+VERCEL_TEAM_ID=
+VERCEL_TEAM_SLUG=
+VERCEL_ANALYTICS_API_URL=
+VERCEL_ANALYTICS_LIMIT=100
+ADMIN_ANALYTICS_SYNC_DAYS=30
+ADMIN_ANALYTICS_SYNC_CONCURRENCY=3
+```
+
+Private server credentials must remain in `.env` / deployment environment settings only. Firebase client values that use `NEXT_PUBLIC_*` are public browser configuration, while Firebase Admin private key, SMTP credentials, Cloudinary secret, and Vercel tokens must not be hard-coded in source.
+
+### Wishlist / Planned Moderation Features
+*   **Report User:** Users will be able to report another account with a complaint message and selected conversation/message context.
+*   **Admin Review Queue:** Reports should appear in the admin portal with reporter, reported user, complaint text, selected conversation excerpts, timestamps, and moderation status.
+*   **Admin Enforcement:** From a report, admins should be able to suspend/reactivate the reported account using the existing admin suspension flow.
+*   **Email Notification to Admin:** New reports should notify configured admin email recipients through the existing SMTP/Nodemailer infrastructure.
+*   **Push Notification to Admin:** New reports should also send Firebase Cloud Messaging notifications to registered admin devices.
+*   **Audit Trail:** Report actions should be stored in Firestore so future moderation decisions can be reviewed.
+
 
 ---
 

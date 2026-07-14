@@ -1,12 +1,26 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 const PROTECTED_ROUTES = ["/chat"];
-const AUTH_ROUTES = ["/login", "/register", "/forgot-password"];
+const ADMIN_SESSION_COOKIE = "chatly_admin_session";
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const sessionCookie = request.cookies.get("chatly_session")?.value;
+  const adminCookie = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
   const isAuthenticated = Boolean(sessionCookie);
+  const isAdminAuthenticated = Boolean(adminCookie);
+
+  if (pathname === "/admin") {
+    return NextResponse.redirect(new URL("/admin/dashboard", request.url));
+  }
+
+  if (pathname.startsWith("/admin") && pathname !== "/admin/login" && !isAdminAuthenticated) {
+    return NextResponse.redirect(new URL("/admin/login", request.url));
+  }
+
+  if (pathname === "/admin/login" && isAdminAuthenticated) {
+    return NextResponse.redirect(new URL("/admin/dashboard", request.url));
+  }
 
   // Redirect unauthenticated users away from protected routes
   const isProtected = PROTECTED_ROUTES.some((r) => pathname.startsWith(r));

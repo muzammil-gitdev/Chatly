@@ -33,7 +33,7 @@ const Hero = () => {
                     <div
                         className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row"
                     >
-                        <Link href="/register" className="inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-primary px-7 text-base font-bold text-primary-foreground shadow-xl shadow-emerald-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-emerald-500/35">
+                        <Link href="/login" className="inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-primary px-7 text-base font-bold text-primary-foreground shadow-xl shadow-emerald-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-emerald-500/35">
                             Start Chatting
                             <ArrowRight className="h-4.5 w-4.5" />
                         </Link>

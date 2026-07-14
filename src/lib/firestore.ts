@@ -32,8 +32,10 @@ export interface FirestoreUser {
   photoPublicId?: string | null;
   bio: string;
   phone: string;
+  designation?: string;
   location: string;
   isActivated: boolean;
+  isSuspended?: boolean;
   status: "online" | "offline";
   lastSeen: unknown; // Firestore Timestamp
   createdAt: unknown; // Firestore Timestamp

@@ -22,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Inline theme script — prevents flash of unstyled content */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('theme'),d=window.matchMedia('(prefers-color-scheme:dark)').matches;if(t==='dark'||(t===null&&d))document.documentElement.classList.add('dark')}catch(e){}})()`,
+            __html: `(function(){try{var t=localStorage.getItem('theme');var c=document.cookie.split('; ').find(function(r){return r.indexOf('theme=')===0})?.split('=')[1];var x=t||c||'light';document.documentElement.classList.remove('light','dark');document.documentElement.classList.add(x==='dark'?'dark':'light');document.documentElement.style.colorScheme=x==='dark'?'dark':'light'}catch(e){document.documentElement.classList.add('light');document.documentElement.style.colorScheme='light'}})()`,
           }}
         />
       </head>

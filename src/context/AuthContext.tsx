@@ -74,7 +74,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const profileRef = doc(db, COLLECTIONS.USERS, user.uid);
     const unsubscribeProfile = onSnapshot(profileRef, (snap) => {
-      setProfile(snap.exists() ? (snap.data() as FirestoreUser) : null);
+      const nextProfile = snap.exists() ? (snap.data() as FirestoreUser) : null;
+      if (nextProfile?.isSuspended) {
+        Cookies.remove("chatly_session");
+        signOut(auth).finally(() => {
+          window.location.href = "/login";
+        });
+        return;
+      }
+      setProfile(nextProfile);
       setLoading(false);
     });
 
