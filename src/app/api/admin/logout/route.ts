@@ -5,3 +5,8 @@ export async function POST(request: Request) {
   await clearAdminSessionCookie();
   return NextResponse.redirect(new URL("/admin/login", request.url));
 }
+
+export async function GET(request: Request) {
+  await clearAdminSessionCookie();
+  return NextResponse.redirect(new URL("/admin/login", request.url));
+}
